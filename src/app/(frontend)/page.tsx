@@ -7,7 +7,7 @@ import { CategorySection } from '@/components/home/CategorySection'
 import { BlogPost, BlogCategory } from '@/payload-types'
 import { subDays } from 'date-fns'
 import { Metadata } from 'next'
-import  { sharedMetadata } from '@/app/shared-metadata'
+import { sharedMetadata } from '@/app/shared-metadata'
 import siteConfig from '@/app/shared-metadata'
 
 export const metadata: Metadata = {
@@ -29,6 +29,9 @@ export const metadata: Metadata = {
     canonical: new URL('/', siteConfig.url).toString(),
   },
 }
+
+// Add revalidation every 30 seconds to ensure fresh content
+export const revalidate = 30
 
 export default async function HomePage() {
   const payloadConfig = await config

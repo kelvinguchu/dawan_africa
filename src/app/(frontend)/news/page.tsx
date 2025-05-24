@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   },
 }
 
+// Add revalidation to ensure deleted posts are immediately reflected
+export const revalidate = 30
+
 interface NewsPageProps {
   searchParams?: Promise<{
     search?: string
