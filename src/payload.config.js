@@ -20,7 +20,13 @@ export default buildConfig({
     user: Users.slug,
     meta: {
       titleSuffix: '- Dawan Africa',
-      favicon: '/favicon.png',
+      icons: [
+        {
+          rel: 'icon',
+          type: 'image/png',
+          url: '/favicon.png',
+        },
+      ],
     },
     components: {
       graphics: {
