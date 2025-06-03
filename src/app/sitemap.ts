@@ -7,7 +7,7 @@ async function getAllPosts() {
   const payload = await getPayload({ config })
   const posts = await payload.find({
     collection: 'blogPosts',
-    limit: 1000, // Adjust based on your needs
+    limit: 100,
   })
   return posts.docs
 }

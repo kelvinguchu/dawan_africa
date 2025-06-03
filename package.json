@@ -20,6 +20,7 @@
     "@hookform/resolvers": "^5.0.1",
     "@lexical/headless": "^0.28.0",
     "@lexical/html": "^0.28.0",
+    "@next/third-parties": "^15.3.3",
     "@payloadcms/db-mongodb": "^3.39.1",
     "@payloadcms/next": "^3.39.1",
     "@payloadcms/payload-cloud": "^3.39.1",

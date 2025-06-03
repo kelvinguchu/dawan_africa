@@ -15,6 +15,8 @@ import { Loading } from '@/components/global/Loading'
 import type { Metadata, Viewport } from 'next'
 import { sharedMetadata } from '@/app/shared-metadata'
 import siteConfig from '@/app/shared-metadata'
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { WebVitals } from '@/hooks/useWebVitals'
 
 const sourceSans3 = Source_Sans_3({
   subsets: ['latin'],
@@ -95,6 +97,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
         <meta name="theme-color" content="#2EC6FE" />
       </head>
       <body className={cn('font-sans', 'min-h-screen flex flex-col bg-gray-50')}>
+        <WebVitals />
         <Suspense fallback={<Loading fullScreen={true} message="Loading..." />}>
           <AuthProvider>
             <QueryProvider>
@@ -110,6 +113,9 @@ export default function RootLayout({ children }: { readonly children: React.Reac
             </QueryProvider>
           </AuthProvider>
         </Suspense>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -4,6 +4,7 @@ export const BlogCategories: CollectionConfig = {
   slug: 'blogCategories',
   admin: {
     useAsTitle: 'name',
+    group: 'Content Management',
   },
   access: {
     read: () => true,
@@ -22,7 +23,7 @@ export const BlogCategories: CollectionConfig = {
       required: true,
       admin: {
         position: 'sidebar',
-      }
+      },
     },
   ],
 }

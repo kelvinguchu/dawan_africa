@@ -28,7 +28,9 @@ const fetchBlogPosts = async ({
     const payload = await getPayload({ config: configPromise })
 
     // Build the where clause
-    const where: any = {}
+    const where: any = {
+      status: { equals: 'published' }, // Only show published posts
+    }
     if (searchTerm && searchTerm.trim()) {
       where.name = {
         like: searchTerm.trim(),

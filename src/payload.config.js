@@ -11,6 +11,7 @@ import { Users } from './collections/Users.ts'
 import { Media } from './collections/Media.ts'
 import { BlogPost } from './collections/BlogPosts.ts'
 import { BlogCategories } from './collections/BlogCategories.ts'
+import { Staging } from './collections/Staging.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -20,6 +21,8 @@ export default buildConfig({
     user: Users.slug,
     meta: {
       titleSuffix: '- Dawan Africa',
+      favicon: '/favicon.png',
+      ogImage: '/og-default.png',
       icons: [
         {
           rel: 'icon',
@@ -37,8 +40,30 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    livePreview: {
+      breakpoints: [
+        {
+          label: 'Mobile',
+          name: 'mobile',
+          width: 375,
+          height: 667,
+        },
+        {
+          label: 'Tablet',
+          name: 'tablet',
+          width: 768,
+          height: 1024,
+        },
+        {
+          label: 'Desktop',
+          name: 'desktop',
+          width: 1440,
+          height: 900,
+        },
+      ],
+    },
   },
-  collections: [Users, Media, BlogPost, BlogCategories],
+  collections: [Users, Media, BlogPost, BlogCategories, Staging],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
   typescript: {

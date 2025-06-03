@@ -4,21 +4,46 @@ import { deleteAudioFromUploadthing } from './audioUtils'
 // Simple in-memory lock to prevent concurrent audio generation for the same post
 const audioGenerationLocks = new Set<string>()
 
-// Simple hook that triggers audio generation via API call (no transaction conflicts)
+/**
+ * Helper function to create an AbortSignal with timeout that properly cleans up timers
+ * @param timeoutMs - Timeout in milliseconds
+ * @returns AbortSignal that will abort after the specified timeout
+ */
+const createTimeoutSignal = (timeoutMs: number): AbortSignal => {
+  if (typeof AbortSignal?.timeout === 'function') {
+    return AbortSignal.timeout(timeoutMs)
+  }
+
+  // Fallback for older Node.js versions with proper cleanup
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  // Clean up timer when signal is aborted (prevents timer leak)
+  controller.signal.addEventListener('abort', () => clearTimeout(timer))
+
+  return controller.signal
+}
+
+// Hook that triggers audio generation only for published posts
 export const generateAudioAfterChange: CollectionAfterChangeHook = async ({
   doc,
   previousDoc,
   operation,
   context,
+  req,
 }) => {
   console.log('\n🔧 [AUDIO HOOK] Audio generation hook triggered!')
   console.log(`🔧 [AUDIO HOOK] Operation: ${operation}`)
   console.log(`🔧 [AUDIO HOOK] Post ID: ${doc.id}`)
   console.log(`🔧 [AUDIO HOOK] Post Name: "${doc.name}"`)
+  console.log(`🔧 [AUDIO HOOK] Current Status: ${doc.status}`)
+  console.log(`🔧 [AUDIO HOOK] Previous Status: ${previousDoc?.status || 'N/A'}`)
 
-  // Check context flag to prevent infinite loops (if API call somehow triggers this)
-  if (context?.triggerAfterChange === false) {
-    console.log('⏭️ [AUDIO HOOK] Skipping audio generation (triggerAfterChange flag set to false)')
+  // Check context flags to prevent infinite loops and skip internal tasks
+  if (context?.triggerAfterChange === false || context?.internalTask === true) {
+    console.log(
+      '⏭️ [AUDIO HOOK] Skipping audio generation (internal task or triggerAfterChange flag)',
+    )
     return doc
   }
 
@@ -27,6 +52,41 @@ export const generateAudioAfterChange: CollectionAfterChangeHook = async ({
     console.log('⏭️ [AUDIO HOOK] Skipping audio generation (already in progress for this post)')
     return doc
   }
+
+  // Handle audio cleanup for unpublished posts
+  if (doc.status !== 'published' && doc.audioUrl) {
+    console.log(`🗑️ [AUDIO HOOK] Post status is "${doc.status}" - cleaning up existing audio file`)
+    try {
+      await deleteAudioFromUploadthing(doc.audioUrl)
+      console.log('✅ [AUDIO HOOK] Audio file deleted due to unpublished status')
+
+      // Clear the audioUrl field from the database to prevent stale links
+      // Use internal task context and override access to prevent hook cascades and race conditions
+      await req.payload.update({
+        collection: 'blogPosts',
+        id: doc.id,
+        overrideAccess: true, // Skip ACL for internal task
+        data: { audioUrl: null },
+        context: { triggerAfterChange: false, internalTask: true },
+      })
+      console.log('✅ [AUDIO HOOK] AudioUrl field cleared from database')
+
+      return { ...doc, audioUrl: null }
+    } catch (deleteError) {
+      console.error('❌ [AUDIO HOOK] Error deleting audio file for unpublished post:', deleteError)
+    }
+    return doc
+  }
+
+  // Only generate audio for published posts
+  if (doc.status !== 'published') {
+    console.log(
+      `⏭️ [AUDIO HOOK] Post status is "${doc.status}" - skipping audio generation (only published posts get audio)`,
+    )
+    return doc
+  }
+
+  console.log('✅ [AUDIO HOOK] Post is published - proceeding with audio generation checks...')
 
   // Check environment variables
   if (
@@ -46,19 +106,33 @@ export const generateAudioAfterChange: CollectionAfterChangeHook = async ({
   }
 
   try {
-    // Check if content has changed (for updates) or if this is a new post
+    // Check if content has changed (for updates) or if this is a newly published post
+    const statusChangedToPublished =
+      operation === 'update' && previousDoc?.status !== 'published' && doc.status === 'published'
+
     const contentChanged =
       operation === 'create' ||
       !previousDoc ||
       doc.name !== previousDoc.name ||
       JSON.stringify(doc.layout) !== JSON.stringify(previousDoc.layout)
 
-    if (!contentChanged) {
-      console.log('⏭️ [AUDIO HOOK] No content changes detected, skipping audio generation')
+    const shouldGenerateAudio =
+      (operation === 'create' && doc.status === 'published') || // New published post
+      statusChangedToPublished || // Status changed to published
+      (contentChanged && doc.status === 'published') // Content changed on published post
+
+    if (!shouldGenerateAudio) {
+      console.log('⏭️ [AUDIO HOOK] No relevant changes detected for audio generation')
       return doc
     }
 
-    console.log('✅ [AUDIO HOOK] Content changes detected, proceeding with audio generation...')
+    if (statusChangedToPublished) {
+      console.log('🎉 [AUDIO HOOK] Post status changed to published - generating audio!')
+    } else if (contentChanged) {
+      console.log(
+        '✅ [AUDIO HOOK] Content changes detected on published post - regenerating audio...',
+      )
+    }
 
     // Add lock to prevent concurrent generation
     audioGenerationLocks.add(doc.id)
@@ -93,8 +167,8 @@ export const generateAudioAfterChange: CollectionAfterChangeHook = async ({
       headers: {
         'Content-Type': 'application/json',
       },
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(5 * 60 * 1000), // 5 minute timeout
+      // Add timeout with proper cleanup to prevent timer leaks
+      signal: createTimeoutSignal(5 * 60 * 1000), // 5 minutes
     })
       .then(async (response) => {
         if (response.ok) {
@@ -168,13 +242,13 @@ export const deleteAudioBeforeDelete: CollectionBeforeDeleteHook = async ({ req,
     })
 
     if (doc.audioUrl) {
-      console.log(`Deleting audio file for post "${doc.name}" before deletion`)
+      console.log(`🗑️ [AUDIO HOOK] Deleting audio file for post "${doc.name}" before deletion`)
       await deleteAudioFromUploadthing(doc.audioUrl)
-      console.log(`✅ Audio file deleted for post "${doc.name}"`)
+      console.log(`✅ [AUDIO HOOK] Audio file deleted for post "${doc.name}"`)
     }
   } catch (error) {
     console.error(
-      `❌ Failed to delete audio file for post ID ${id}: ${
+      `❌ [AUDIO HOOK] Failed to delete audio file for post ID ${id}: ${
         error instanceof Error ? error.message : String(error)
       }`,
     )

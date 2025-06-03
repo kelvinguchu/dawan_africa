@@ -44,6 +44,9 @@ const fetchCategoryPosts = async (context: { queryKey: readonly unknown[] }) => 
   // Filter by category slug
   queryParams.append('where[categories.slug][equals]', categorySlug)
 
+  // Only show published posts
+  queryParams.append('where[status][equals]', 'published')
+
   if (term && term.trim()) {
     // Use exact Payload CMS query format for searching
     queryParams.append('where[name][like]', term.trim())

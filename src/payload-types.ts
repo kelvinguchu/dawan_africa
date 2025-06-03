@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     blogPosts: BlogPost;
     blogCategories: BlogCategory;
+    staging: Staging;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -81,6 +82,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     blogPosts: BlogPostsSelect<false> | BlogPostsSelect<true>;
     blogCategories: BlogCategoriesSelect<false> | BlogCategoriesSelect<true>;
+    staging: StagingSelect<false> | StagingSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -118,6 +120,8 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Manage user accounts and roles for the blog platform. Assign content creator roles to enable post submission workflow.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -125,21 +129,27 @@ export interface User {
   id: string;
   name?: string | null;
   /**
-   * User's profile picture.
+   * Upload a profile picture for the user.
    */
   profilePicture?: (string | null) | Media;
-  roles?: ('admin' | 'editor' | 'user')[] | null;
+  /**
+   * Select the roles for this user. Content creators can write posts, admins can approve them.
+   */
+  roles?: ('admin' | 'analyst' | 'columnist' | 'reporter' | 'contributor' | 'user')[] | null;
+  /**
+   * User subscription level for premium content access.
+   */
   subscriptionTier?: ('free' | 'premium') | null;
   /**
-   * Has the user verified their email address?
+   * Automatically updated when user verifies their email.
    */
   isEmailVerified?: boolean | null;
   /**
-   * Posts the user has favorited.
+   * Blog posts marked as favorites by this user.
    */
   favoritedPosts?: (string | BlogPost)[] | null;
   /**
-   * Posts the user has liked.
+   * Blog posts liked by this user.
    */
   likedPosts?: (string | BlogPost)[] | null;
   updatedAt: string;
@@ -174,6 +184,8 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * Manage blog posts and content.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "blogPosts".
  */
@@ -184,6 +196,14 @@ export interface BlogPost {
    * This is automatically generated from the title.
    */
   slug: string;
+  /**
+   * Current status of your post. Contact an admin to change this.
+   */
+  statusDisplay?: string | null;
+  /**
+   * Change the publication status of this post.
+   */
+  status?: ('pending' | 'published') | null;
   layout?:
     | (
         | {
@@ -237,6 +257,9 @@ export interface BlogPost {
       )[]
     | null;
   categories?: (string | BlogCategory)[] | null;
+  /**
+   * Select an author from content creators and admins. Regular users are excluded.
+   */
   author: string | User;
   likes?: number | null;
   favoritesCount?: number | null;
@@ -257,6 +280,54 @@ export interface BlogCategory {
   id: string;
   name: string;
   slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Review and approve blog posts submitted by content creators. Simple workflow for content approval.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staging".
+ */
+export interface Staging {
+  id: string;
+  /**
+   * The blog post being reviewed. Only pending posts are available for selection.
+   */
+  blogPost: string | BlogPost;
+  /**
+   * Current status of the review process. Change to Published to approve the post.
+   */
+  status: 'pending' | 'published';
+  /**
+   * When the post was submitted for review.
+   */
+  submittedAt?: string | null;
+  /**
+   * The content creator who submitted this post for review.
+   */
+  submittedBy?: (string | null) | User;
+  /**
+   * The admin who reviewed this post.
+   */
+  reviewedBy?: (string | null) | User;
+  /**
+   * When the review was completed.
+   */
+  reviewedAt?: string | null;
+  /**
+   * Automatic log of status changes and actions.
+   */
+  workflowHistory?:
+    | {
+        action: string;
+        performedBy: string | User;
+        performedAt: string;
+        fromStatus?: string | null;
+        toStatus?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -282,6 +353,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'blogCategories';
         value: string | BlogCategory;
+      } | null)
+    | ({
+        relationTo: 'staging';
+        value: string | Staging;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -373,6 +448,8 @@ export interface MediaSelect<T extends boolean = true> {
 export interface BlogPostsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  statusDisplay?: T;
+  status?: T;
   layout?:
     | T
     | {
@@ -417,6 +494,30 @@ export interface BlogPostsSelect<T extends boolean = true> {
 export interface BlogCategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staging_select".
+ */
+export interface StagingSelect<T extends boolean = true> {
+  blogPost?: T;
+  status?: T;
+  submittedAt?: T;
+  submittedBy?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
+  workflowHistory?:
+    | T
+    | {
+        action?: T;
+        performedBy?: T;
+        performedAt?: T;
+        fromStatus?: T;
+        toStatus?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

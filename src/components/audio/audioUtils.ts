@@ -202,7 +202,7 @@ const emergencySplitText = (text: string, maxSize: number): string[] => {
   return chunks
 }
 
-// Function to properly concatenate WAV audio buffers
+// Function to concatenate WAV audio buffers
 export const concatenateWavBuffers = (audioBuffers: Buffer[]): Buffer | null => {
   if (audioBuffers.length === 0) return null
   if (audioBuffers.length === 1) return audioBuffers[0]

@@ -43,6 +43,9 @@ export default async function HomePage() {
     limit: 20,
     sort: '-createdAt',
     depth: 2,
+    where: {
+      status: { equals: 'published' }, 
+    },
   })
 
   const heroPosts = heroPostsResponse.docs
@@ -60,6 +63,9 @@ export default async function HomePage() {
     depth: 2,
     where: {
       and: [
+        {
+          status: { equals: 'published' }, // Only published posts
+        },
         {
           createdAt: {
             greater_than: thirtyDaysAgo,
@@ -81,9 +87,16 @@ export default async function HomePage() {
     sort: '-createdAt',
     depth: 2,
     where: {
-      isEditorsPick: {
-        equals: true,
-      },
+      and: [
+        {
+          status: { equals: 'published' }, // Only published posts
+        },
+        {
+          isEditorsPick: {
+            equals: true,
+          },
+        },
+      ],
     },
     // Removed the heroPostIds exclusion for editor's picks
   })
@@ -95,9 +108,16 @@ export default async function HomePage() {
     sort: '-createdAt',
     depth: 2,
     where: {
-      id: {
-        not_in: heroPostIds,
-      },
+      and: [
+        {
+          status: { equals: 'published' }, // Only published posts
+        },
+        {
+          id: {
+            not_in: heroPostIds,
+          },
+        },
+      ],
     },
   })
 
@@ -115,6 +135,9 @@ export default async function HomePage() {
     limit: 100,
     sort: '-createdAt',
     depth: 2,
+    where: {
+      status: { equals: 'published' }, // Only published posts
+    },
   })
 
   const postsWithCategories = postsWithCategoriesResponse.docs.filter(

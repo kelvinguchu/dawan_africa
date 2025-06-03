@@ -78,12 +78,66 @@ export const getAuthorDisplayName = (author: BlogPost['author']): string => {
   if (!author) return 'Unknown Author'
 
   if (typeof author === 'object' && author !== null) {
-    const user = author as User // author is type User here
-    // The User type does not have a 'name' property.
-    // Reverting to use email, consistent with original component logic.
-    return user.email?.split('@')[0] || 'Unknown Author'
+    const user = author as User
+    // Use the actual name field if available, fallback to email username
+    return user.name || user.email?.split('@')[0] || 'Unknown Author'
   }
   // If author is just an ID (string or number), we can't resolve the name here
-  // This utility assumes the author object is populated.
-  return 'Unknown Author' // Fallback if author is an ID or unhandled type
+  return 'Unknown Author'
+}
+
+
+/**
+ * Gets the author's full name from a BlogPost.
+ * @param author - The author object or ID from a BlogPost.
+ * @returns The author's full name or 'Unknown Author'.
+ */
+export const getAuthorName = (author: BlogPost['author']): string => {
+  if (!author) return 'Unknown Author'
+
+  if (typeof author === 'object' && author !== null) {
+    const user = author as User
+    return user.name || 'Unknown Author'
+  }
+  return 'Unknown Author'
+}
+
+/**
+ * Gets the author's primary role with proper formatting.
+ * Prioritizes content creator roles over admin for display purposes.
+ * @param author - The author object or ID from a BlogPost.
+ * @returns The author's primary role with proper capitalization.
+ */
+export const getAuthorRole = (author: BlogPost['author']): string => {
+  if (!author) return 'Contributor'
+
+  if (typeof author === 'object' && author !== null) {
+    const user = author as User
+    if (user.roles && user.roles.length > 0) {
+      // Prioritize content creator roles for display (more specific than admin)
+      const contentCreatorRoles = ['analyst', 'columnist', 'reporter', 'contributor']
+      const contentCreatorRole = user.roles.find((role) => contentCreatorRoles.includes(role))
+
+      // Use content creator role if found, otherwise use the first non-'user' role
+      const primaryRole =
+        contentCreatorRole || user.roles.find((role) => role !== 'user') || user.roles[0]
+
+      // Format role names for display
+      switch (primaryRole) {
+        case 'admin':
+          return 'Admin'
+        case 'analyst':
+          return 'Analyst'
+        case 'columnist':
+          return 'Columnist'
+        case 'reporter':
+          return 'Reporter'
+        case 'contributor':
+          return 'Contributor'
+        default:
+          return 'Contributor'
+      }
+    }
+  }
+  return 'Contributor'
 }

@@ -1,135 +1,96 @@
 import type { CollectionConfig } from 'payload'
 
-// Assuming you have a BlogPost type defined in payload-types.ts
-import { BlogPost, Media } from '../payload-types' // Corrected import path, added Media
-
-// Added interface to extend the User type
-interface UserWithRoles {
-  id?: string
-  name?: string
-  email?: string
-  roles?: string[]
-  subscriptionTier?: string
-  isEmailVerified?: boolean
-  profilePicture?: string | Media // Can be ID or populated Media object
-  favoritedPosts?: (string | BlogPost)[] // Can be array of IDs or populated BlogPosts
-  likedPosts?: (string | BlogPost)[]
-}
-
 export const Users: CollectionConfig = {
   slug: 'users',
+  auth: true,
   admin: {
     useAsTitle: 'email',
+    group: 'User Management',
+    defaultColumns: ['name', 'email', 'roles', 'subscriptionTier', 'isEmailVerified', 'createdAt'],
     listSearchableFields: ['name', 'email'],
-  },
-  auth: {
-    tokenExpiration: 7200, // 2 hours in seconds
-    maxLoginAttempts: 5,
-    lockTime: 600 * 1000, // 10 min in ms
-    forgotPassword: {
-      // SMTP needed for email sending
-    },
-    cookies: {
-      sameSite: 'None',
-      secure: true,
-    },
-    // Ensure relationships like profilePicture, favoritedPosts, likedPosts are populated on login/me requests
-    // This might require custom hooks or verifying default population depth. For now, we assume `depth` in API calls will handle it.
-  },
-  access: {
-    admin: ({ req }) => {
-      const user = req.user as UserWithRoles | null
-      return Boolean(user?.roles?.includes('admin'))
-    },
-    create: () => true,
-    read: ({ req }) => {
-      const user = req.user as UserWithRoles | null
-      if (user?.roles?.includes('admin')) return true
-      return { id: { equals: user?.id } }
-    },
-    update: ({ req }) => {
-      const user = req.user as UserWithRoles | null
-      if (user?.roles?.includes('admin')) return true
-      return { id: { equals: user?.id } }
-    },
-    delete: ({ req }) => {
-      const user = req.user as UserWithRoles | null
-      return Boolean(user?.roles?.includes('admin'))
-    },
+    description:
+      'Manage user accounts and roles for the blog platform. Assign content creator roles to enable post submission workflow.',
   },
   fields: [
     {
       name: 'name',
       type: 'text',
       label: 'Full Name',
-      saveToJWT: true, // Make name available in user object from `useAuth` or `req.user` easily
     },
     {
       name: 'profilePicture',
-      label: 'Profile Picture',
-      type: 'relationship',
+      type: 'upload',
       relationTo: 'media',
+      label: "User's profile picture.",
+      maxDepth: 1,
       admin: {
-        description: "User's profile picture.",
+        description: 'Upload a profile picture for the user.',
       },
     },
     {
       name: 'roles',
       type: 'select',
+      label: 'User Roles',
       hasMany: true,
       defaultValue: ['user'],
       options: [
-        { label: 'Admin', value: 'admin' },
-        { label: 'Editor', value: 'editor' },
-        { label: 'User', value: 'user' },
+        { label: '👑 Admin', value: 'admin' },
+        { label: '📊 Analyst', value: 'analyst' },
+        { label: '✍️ Columnist', value: 'columnist' },
+        { label: '📰 Reporter', value: 'reporter' },
+        { label: '🤝 Contributor', value: 'contributor' },
+        { label: '👤 User', value: 'user' },
       ],
+      admin: {
+        description:
+          'Select the roles for this user. Content creators can write posts, admins can approve them.',
+      },
       access: {
+        // Only admins can assign roles during creation
+        create: ({ req }) => {
+          const user = req.user
+          return Boolean(user?.roles?.includes('admin'))
+        },
+        // Only admins can modify user roles
         update: ({ req }) => {
-          const user = req.user as UserWithRoles | null
+          const user = req.user
           return Boolean(user?.roles?.includes('admin'))
         },
       },
-      saveToJWT: true,
     },
     {
       name: 'subscriptionTier',
       type: 'select',
+      label: 'Subscription Tier',
       defaultValue: 'free',
       options: [
         { label: 'Free', value: 'free' },
         { label: 'Premium', value: 'premium' },
       ],
-      access: {
-        update: ({ req }) => {
-          const user = req.user as UserWithRoles | null
-          return Boolean(user?.roles?.includes('admin'))
-        },
+      admin: {
+        description: 'User subscription level for premium content access.',
       },
-      saveToJWT: true,
     },
     {
       name: 'isEmailVerified',
       type: 'checkbox',
+      label: 'Has the user verified their email address?',
       defaultValue: false,
       admin: {
-        description: 'Has the user verified their email address?',
-        position: 'sidebar',
+        readOnly: true,
+        description: 'Automatically updated when user verifies their email.',
       },
-      access: {
-        update: ({ req }) => {
-          const user = req.user as UserWithRoles | null
-          return Boolean(user?.roles?.includes('admin'))
-        },
-      },
-      saveToJWT: true,
     },
     {
       name: 'favoritedPosts',
       type: 'relationship',
       relationTo: 'blogPosts',
       hasMany: true,
+      label: 'Posts the user has favorited.',
+      maxDepth: 0,
       admin: {
-        description: 'Posts the user has favorited.',
+        description: 'Blog posts marked as favorites by this user.',
+        allowCreate: false,
       },
     },
     {
@@ -137,9 +98,65 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'blogPosts',
       hasMany: true,
+      label: 'Posts the user has liked.',
+      maxDepth: 0,
       admin: {
-        description: 'Posts the user has liked.',
+        description: 'Blog posts liked by this user.',
+        allowCreate: false,
       },
     },
   ],
+  access: {
+    // Users can create accounts (registration)
+    create: () => true,
+
+    // Content creators and admins can read user profiles for author selection
+    read: ({ req }) => {
+      const user = req.user
+      if (!user) return false
+
+      // Admins can read all user profiles
+      if (user.roles?.includes('admin')) {
+        return true
+      }
+
+      // Content creators can read profiles of other content creators and admins for author selection
+      // This allows proper display in the admin panel
+      if (
+        user.roles?.some((role: string) =>
+          ['analyst', 'columnist', 'reporter', 'contributor'].includes(role),
+        )
+      ) {
+        return {
+          or: [
+            { id: { equals: user.id } },
+            { roles: { in: ['admin', 'analyst', 'columnist', 'reporter', 'contributor'] } },
+          ],
+        } as any
+      }
+
+      // Regular users can only read their own profile
+      return { id: { equals: user.id } }
+    },
+
+    // Users can update their own profile, admins can update all
+    update: ({ req }) => {
+      const user = req.user
+      if (!user) return false
+
+      // Admins can update all user profiles
+      if (user.roles?.includes('admin')) {
+        return true
+      }
+
+      // Users can only update their own profile
+      return { id: { equals: user.id } }
+    },
+
+    // Only admins can delete user accounts
+    delete: ({ req }) => {
+      const user = req.user
+      return Boolean(user?.roles?.includes('admin'))
+    },
+  },
 }
