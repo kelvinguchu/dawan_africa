@@ -18,7 +18,7 @@ const PrivacyPolicy: React.FC = () => {
       {/* Content Section */}
       <section className="py-12 sm:py-16">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto prose prose-lg prose-slate max-w-none">
+          <div className="max-w-4xl mx-auto prose prose-lg prose-slate">
             <div className="mb-8">
               <p className="text-gray-600 leading-relaxed">
                 This Privacy Policy describes Our policies and procedures on the collection, use and
