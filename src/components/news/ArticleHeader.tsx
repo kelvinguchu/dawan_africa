@@ -80,10 +80,9 @@ export const ArticleHeader: React.FC<ArticleHeaderProps> = ({ post, currentUrl }
             <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 md:gap-x-8 gap-y-2 sm:gap-y-3 text-white/90 text-xs sm:text-sm md:text-base">
               <div className="flex items-center">
                 <UserCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-1.5 sm:mr-2 md:mr-3 text-white" />
-                <div className="flex flex-col">
-                <span className="font-medium">By {authorName}</span>
-                  <span className="text-xs sm:text-sm text-white/80">{authorRole}</span>
-                </div>
+                <span className="font-medium">
+                  By {authorName} - {authorRole}
+                </span>
               </div>
               <div className="flex items-center">
                 <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-1.5 sm:mr-2 md:mr-3 text-white" />

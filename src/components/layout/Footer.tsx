@@ -179,6 +179,15 @@ const Footer: React.FC = () => {
                   Latest News
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/about"
+                  className="text-slate-300 hover:text-[#2aaac6] transition-colors flex items-center"
+                >
+                  <BiChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2" />
+                  About Us
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -262,7 +271,7 @@ const Footer: React.FC = () => {
           </p>
           <div className="mt-4 sm:mt-0 flex flex-wrap justify-center gap-4 sm:gap-6">
             <Link
-              href="/privacy"
+              href="/privacy-policy"
               className="text-slate-400 hover:text-[#2aaac6] text-xs sm:text-sm"
             >
               Privacy Policy

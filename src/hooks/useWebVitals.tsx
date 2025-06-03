@@ -13,8 +13,6 @@ export function WebVitals() {
       })
     }
 
-    // Also log to console for debugging (remove in production)
-    console.log('Web Vitals:', metric)
   })
 
   return null
