@@ -92,6 +92,7 @@ export default function ResetPasswordPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for Payload authentication
         body: JSON.stringify({
           token,
           password,
@@ -113,7 +114,8 @@ export default function ResetPasswordPage() {
       if (response.ok) {
         setMessage({
           type: 'success',
-          text: 'Your password has been successfully reset. Redirecting to login...',
+          text:
+            data.message || 'Your password has been successfully reset. Redirecting to login...',
         })
 
         // Redirect to login after success
@@ -181,7 +183,6 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-
         <Card className="border-slate-200 shadow-lg overflow-hidden">
           <CardHeader className="bg-white space-y-1 pb-6">
             <CardTitle className="text-2xl font-semibold text-slate-900 text-center">

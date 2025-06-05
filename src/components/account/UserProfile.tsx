@@ -35,6 +35,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate }) => {
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name }),
       })
       if (!response.ok) {

@@ -32,6 +32,7 @@ export const ArticleInteractions: React.FC<ArticleInteractionsProps> = ({ post, 
         headers: {
           Accept: 'application/json',
         },
+        credentials: 'include', // Important for Payload authentication
       })
       if (resp.ok) {
         const data = await resp.json()

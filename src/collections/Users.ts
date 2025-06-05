@@ -287,6 +287,17 @@ export const Users: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeLogin: [
+      async ({ user }) => {
+        // Check if user has verified their email
+        if (!user._verified || !user.isEmailVerified) {
+          throw new Error(
+            'Please verify your email address before signing in. Check your email for a verification link.',
+          )
+        }
+        return user
+      },
+    ],
     beforeChange: [
       ({ data, req, operation }) => {
         // Sync isEmailVerified with Payload's built-in _verified field

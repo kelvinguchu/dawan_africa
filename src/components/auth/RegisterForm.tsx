@@ -34,14 +34,18 @@ export const RegisterForm: React.FC = () => {
 
     setIsLoading(true)
     try {
-      // Step 1: Register user account
+      // Step 1: Register user account using Payload's built-in endpoint
       const response = await fetch('/api/users', {
-        // POST to /api/users for registration
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        credentials: 'include', // Important for Payload authentication
+        body: JSON.stringify({
+          name,
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       })
 
       if (response.ok) {

@@ -22,15 +22,15 @@ export default function VerifyEmailPage() {
       return
     }
 
-    // Automatically verify the email on the server side
+    // Automatically verify the email using Payload's built-in endpoint
     const verifyEmail = async () => {
       try {
-        const response = await fetch('/api/users/verify-email', {
+        const response = await fetch(`/api/users/verify/${token}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ token }),
+          credentials: 'include',
         })
 
         const data = await response.json()

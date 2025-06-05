@@ -36,7 +36,10 @@ export default function AccountPageClient(): JSX.Element {
   //---------------------------------------------------------------------------
   const fetchUser = useCallback(async (): Promise<void> => {
     try {
-      const res = await fetch('/api/users/me?depth=2', { cache: 'no-store' })
+      const res = await fetch('/api/users/me?depth=2', {
+        cache: 'no-store',
+        credentials: 'include', // Important for Payload authentication
+      })
       const json = await res.json()
 
       if (res.ok && json?.user) {

@@ -54,6 +54,7 @@ export const UserBio: React.FC<UserBioProps> = ({ user, onUpdate }) => {
       // Step 1: Upload image to media collection
       const mediaResponse = await fetch('/api/media', {
         method: 'POST',
+        credentials: 'include', // Important for Payload authentication
         body: formData,
         // No 'Content-Type' header for FormData, browser sets it with boundary
       })
@@ -68,13 +69,17 @@ export const UserBio: React.FC<UserBioProps> = ({ user, onUpdate }) => {
       const userUpdateResponse = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important for Payload authentication
         body: JSON.stringify({ profilePicture: newMedia.id }),
       })
 
       if (!userUpdateResponse.ok) {
         const errorData = await userUpdateResponse.json()
         // Attempt to delete the orphaned media if user update fails
-        await fetch(`/api/media/${newMedia.id}`, { method: 'DELETE' })
+        await fetch(`/api/media/${newMedia.id}`, {
+          method: 'DELETE',
+          credentials: 'include', // Important for Payload authentication
+        })
         throw new Error(errorData.errors?.[0]?.message ?? 'Failed to update profile picture')
       }
 

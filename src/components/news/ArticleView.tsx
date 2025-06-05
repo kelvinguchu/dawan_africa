@@ -51,6 +51,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
         headers: {
           Accept: 'application/json',
         },
+        credentials: 'include', // Important for Payload authentication
       })
       if (resp.ok) {
         const data = await resp.json()

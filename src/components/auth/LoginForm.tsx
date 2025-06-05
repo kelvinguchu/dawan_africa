@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, KeyRound } from 'lucide-react'
+import { User, KeyRound, Mail } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const LoginForm: React.FC = () => {
   const router = useRouter()
@@ -17,6 +18,7 @@ export const LoginForm: React.FC = () => {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [isResending, setIsResending] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -25,6 +27,38 @@ export const LoginForm: React.FC = () => {
 
     if (success) {
       router.push(redirectTo)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast.error('Please enter your email address first')
+      return
+    }
+
+    setIsResending(true)
+    try {
+      // Use our custom resend verification endpoint (Payload doesn't provide this built-in)
+      const response = await fetch('/api/users/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+        credentials: 'include', // Include cookies for auth
+      })
+
+      if (response.ok) {
+        toast.success('Verification email sent successfully!')
+      } else {
+        const data = await response.json()
+        toast.error(data.message || 'Failed to resend verification email')
+      }
+    } catch (err) {
+      console.error('Resend verification error:', err)
+      toast.error('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -94,7 +128,27 @@ export const LoginForm: React.FC = () => {
             </div>
 
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">{error}</div>
+              <div className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
+                {error}
+                {error.includes('verify your email') && (
+                  <div className="mt-3 pt-3 border-t border-red-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-red-600">Didn&apos;t receive the email?</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResendVerification}
+                        disabled={isResending}
+                        className="h-7 px-3 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Mail className="h-3 w-3 mr-1" />
+                        {isResending ? 'Sending...' : 'Resend email'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="pt-2">
