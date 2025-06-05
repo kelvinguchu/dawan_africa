@@ -45,6 +45,8 @@ export const RegisterForm: React.FC = () => {
       })
 
       if (response.ok) {
+        const userData = await response.json()
+
         // Step 2: Subscribe to newsletter if checked (handle silently if already subscribed)
         if (subscribeToNewsletter) {
           try {
@@ -82,9 +84,8 @@ export const RegisterForm: React.FC = () => {
           }
         }
 
-        // const data = await response.json() // User created
-        // Optionally, log the user in directly or redirect to login with a success message
-        router.push('/login?registered=true') // Redirect to login after successful registration
+        // Show success message and redirect to login with email verification notice
+        router.push('/login?registered=true&verify_email=true')
       } else {
         const errorData = await response.json()
         setError(errorData.message || 'Registration failed. Please try again.')
