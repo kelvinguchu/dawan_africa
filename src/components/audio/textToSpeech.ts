@@ -9,7 +9,28 @@ const getGoogleCloudCredentials = () => {
     throw new Error('Google Cloud credentials are required in production')
   }
 
-  // Method 1: Base64 encoded credentials (recommended for Vercel)
+  // In development, skip base64 processing entirely and use fallback methods
+  if (process.env.NODE_ENV === 'development') {
+    // Method 2: Individual environment variables (preferred for development)
+    if (
+      process.env.GOOGLE_APPLICATION_PROJECT_ID &&
+      process.env.GOOGLE_CLIENT_EMAIL &&
+      process.env.GOOGLE_APPLICATION_PRIVATE_KEY
+    ) {
+      return {
+        projectId: process.env.GOOGLE_APPLICATION_PROJECT_ID,
+        credentials: {
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+          private_key: process.env.GOOGLE_APPLICATION_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        },
+      }
+    }
+
+    // In development, return null to disable TTS instead of throwing error
+    return null
+  }
+
+  // Method 1: Base64 encoded credentials (only for production)
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64) {
     try {
       const base64String = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64.trim()
@@ -44,14 +65,14 @@ const getGoogleCloudCredentials = () => {
       }
     } catch (error) {
       console.error('Failed to parse base64 credentials:', error)
-      // Don't throw during build time - just log the error
-      if (process.env.NODE_ENV !== 'development') {
+      // In production, throw the error
+      if (process.env.NODE_ENV === 'production') {
         throw error
       }
     }
   }
 
-  // Method 2: Individual environment variables (fallback)
+  // Method 2: Individual environment variables (fallback for production)
   if (
     process.env.GOOGLE_APPLICATION_PROJECT_ID &&
     process.env.GOOGLE_CLIENT_EMAIL &&
@@ -66,11 +87,8 @@ const getGoogleCloudCredentials = () => {
     }
   }
 
-  // During development or build time, return a dummy config to prevent crashes
-  if (process.env.NODE_ENV === 'development' || process.env.CI) {
-    console.warn(
-      '⚠️ Google Cloud credentials not properly configured - TTS features will be disabled',
-    )
+  // During CI/build time, return null to prevent crashes
+  if (process.env.CI) {
     return null
   }
 

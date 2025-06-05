@@ -4,6 +4,9 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { BlogCategory, BlogPost, Media } from '@/payload-types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   BiLogoYoutube,
   BiLogoTwitter,
@@ -15,12 +18,21 @@ import {
   BiEnvelope,
   BiTime,
 } from 'react-icons/bi'
+import { Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear()
   const [categories, setCategories] = useState<BlogCategory[]>([])
   const [recentPosts, setRecentPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Newsletter subscription state
+  const [email, setEmail] = useState('')
+  const [isSubscribing, setIsSubscribing] = useState(false)
+  const [subscriptionMessage, setSubscriptionMessage] = useState<{
+    type: 'success' | 'error' | 'info'
+    text: string
+  } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +62,85 @@ const Footer: React.FC = () => {
 
     fetchData()
   }, [])
+
+  // Newsletter subscription handler
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubscribing(true)
+    setSubscriptionMessage(null)
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          source: 'footer',
+        }),
+      })
+
+      // Fix: Check response status before attempting to parse JSON
+      if (!response.ok) {
+        // Try to extract error message from response if it's JSON
+        const contentType = response.headers.get('content-type')
+        let errorMessage = 'Failed to subscribe. Please try again.'
+
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorData.message || errorMessage
+          } catch {
+            // If JSON parsing fails, use default message
+          }
+        }
+
+        setSubscriptionMessage({
+          type: 'error',
+          text: errorMessage,
+        })
+        return
+      }
+
+      // Fix: Validate content-type before parsing JSON for successful responses
+      const contentType = response.headers.get('content-type')
+
+      if (!contentType || !contentType.includes('application/json')) {
+        // Handle successful response that isn't JSON
+        setSubscriptionMessage({
+          type: 'success',
+          text: 'Successfully subscribed to our newsletter!',
+        })
+        setEmail('')
+        return
+      }
+
+      // Safe to parse JSON now
+      const data = await response.json()
+
+      // Check if user was already subscribed
+      const isAlreadySubscribed = data.message?.includes('already subscribed')
+
+      setSubscriptionMessage({
+        type: isAlreadySubscribed ? 'info' : 'success',
+        text: isAlreadySubscribed ? data.message : 'Successfully subscribed to our newsletter!',
+      })
+
+      // Only reset email if it's a new subscription, not if already subscribed
+      if (!isAlreadySubscribed) {
+        setEmail('')
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error)
+      setSubscriptionMessage({
+        type: 'error',
+        text: 'An unexpected error occurred. Please try again later.',
+      })
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
 
   // Function to extract image from the post layout blocks
   const getPostImage = (post: BlogPost): string | null => {
@@ -87,6 +178,7 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-slate-900 text-white">
+      {/* Main Footer Content */}
       <div className="container mx-auto px-4 py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
           {/* Brand and About */}
@@ -265,7 +357,86 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-slate-800 mt-6 sm:mt-10 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center">
+        {/* Newsletter Section */}
+        <div className="border-t border-slate-800 mt-6 sm:mt-10 pt-6 sm:pt-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h4 className="text-lg sm:text-xl font-bold text-white mb-2">
+              Stay Updated with African News
+            </h4>
+            <p className="text-slate-300 text-sm mb-6">
+              Get the latest breaking news and analysis delivered to your inbox.
+            </p>
+
+            <form onSubmit={handleNewsletterSubmit} className="max-w-sm mx-auto">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isSubscribing}
+                    className="h-10 pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-[#2aaac6] focus:ring-[#2aaac6]/20"
+                  />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isSubscribing || !email.trim()}
+                  className="h-10 px-6 bg-[#2aaac6] hover:bg-[#1e90a6] text-white border-0"
+                >
+                  {isSubscribing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Subscribing...
+                    </>
+                  ) : (
+                    'Subscribe'
+                  )}
+                </Button>
+              </div>
+
+              {subscriptionMessage && (
+                <Alert
+                  className={`mt-4 ${
+                    subscriptionMessage.type === 'success'
+                      ? 'border-green-500/20 bg-green-500/10 text-green-400'
+                      : subscriptionMessage.type === 'error'
+                        ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                        : 'border-blue-500/20 bg-blue-500/10 text-blue-400'
+                  }`}
+                >
+                  {subscriptionMessage.type === 'success' ? (
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                  ) : subscriptionMessage.type === 'error' ? (
+                    <AlertCircle className="h-4 w-4 text-red-400" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-blue-400" />
+                  )}
+                  <AlertDescription
+                    className={
+                      subscriptionMessage.type === 'success'
+                        ? 'text-green-400'
+                        : subscriptionMessage.type === 'error'
+                          ? 'text-red-400'
+                          : 'text-blue-400'
+                    }
+                  >
+                    {subscriptionMessage.text}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </form>
+
+            <p className="text-slate-400 text-xs mt-4">
+              Join our community of informed readers. Unsubscribe anytime.
+            </p>
+          </div>
+        </div>
+
+        {/* Copyright Section */}
+        <div className="border-t border-slate-800 mt-6 pt-6 flex flex-col sm:flex-row justify-between items-center">
           <p className="text-slate-400 text-xs sm:text-sm">
             &copy; {currentYear} Dawan Africa. All rights reserved.
           </p>

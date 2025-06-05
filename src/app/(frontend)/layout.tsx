@@ -3,6 +3,7 @@ import '../global.css'
 import '@/styles/audio-player.css'
 import HeaderServer from '@/components/layout/HeaderServer'
 import Footer from '@/components/layout/Footer'
+import NewsletterPopup from '@/components/NewsletterPopup'
 import { Source_Sans_3 } from 'next/font/google'
 import { AuthProvider } from '@/hooks/useAuth'
 import { QueryProvider } from '@/components/providers/QueryProvider'
@@ -37,6 +38,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   ...sharedMetadata,
   manifest: '/manifest.json',
+  verification: {
+    google: '84QZctK6dL25aaWZQeIS4z04cFQTcKGTSnyZmMJzcvk',
+  },
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
@@ -108,6 +112,7 @@ export default function RootLayout({ children }: { readonly children: React.Reac
                   <main className="flex-grow">{children}</main>
                   <Footer />
                   <FloatingAudioPlayer />
+                  <NewsletterPopup delay={5000} />
                 </AudioPlayerProvider>
               </NavigationProvider>
             </QueryProvider>

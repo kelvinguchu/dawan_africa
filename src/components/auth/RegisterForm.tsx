@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { User, Mail, KeyRound } from 'lucide-react'
 // import { useAuth } from '@/hooks/useAuth' // Or direct API call logic
 
@@ -20,6 +21,7 @@ export const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [subscribeToNewsletter, setSubscribeToNewsletter] = useState(true) // Default to checked
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -32,6 +34,7 @@ export const RegisterForm: React.FC = () => {
 
     setIsLoading(true)
     try {
+      // Step 1: Register user account
       const response = await fetch('/api/users', {
         // POST to /api/users for registration
         method: 'POST',
@@ -42,6 +45,43 @@ export const RegisterForm: React.FC = () => {
       })
 
       if (response.ok) {
+        // Step 2: Subscribe to newsletter if checked (handle silently if already subscribed)
+        if (subscribeToNewsletter) {
+          try {
+            // Fix: Improved first name extraction with proper edge case handling
+            const extractFirstName = (fullName: string): string => {
+              const trimmedName = fullName.trim()
+
+              // Handle empty or whitespace-only names
+              if (!trimmedName) {
+                return 'Subscriber' // Default fallback for empty names
+              }
+
+              // Split by spaces and filter out empty strings (handles multiple spaces)
+              const nameParts = trimmedName.split(/\s+/).filter((part) => part.length > 0)
+
+              // Return first part if available, otherwise the full trimmed name
+              return nameParts.length > 0 ? nameParts[0] : trimmedName
+            }
+
+            await fetch('/api/newsletter/subscribe', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: email.trim(),
+                firstName: extractFirstName(name),
+                source: 'registration',
+              }),
+            })
+            // Don't check response - handle silently whether successful, failed, or already subscribed
+          } catch (newsletterError) {
+            // Newsletter subscription error - log but don't fail registration
+            console.log('Newsletter subscription error during registration:', newsletterError)
+          }
+        }
+
         // const data = await response.json() // User created
         // Optionally, log the user in directly or redirect to login with a success message
         router.push('/login?registered=true') // Redirect to login after successful registration
@@ -159,6 +199,21 @@ export const RegisterForm: React.FC = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="flex items-center space-x-3 py-3">
+              <Checkbox
+                id="newsletter-subscribe"
+                checked={subscribeToNewsletter}
+                onCheckedChange={(checked) => setSubscribeToNewsletter(checked as boolean)}
+                className="border-slate-300 data-[state=checked]:bg-[#2aaac6] data-[state=checked]:border-[#2aaac6]"
+              />
+              <Label
+                htmlFor="newsletter-subscribe"
+                className="text-sm text-slate-600 font-normal cursor-pointer leading-5"
+              >
+                Subscribe to our newsletter for the latest African news
+              </Label>
             </div>
 
             {error && (

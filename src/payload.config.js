@@ -2,6 +2,7 @@ import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { resendAdapter } from '@payloadcms/email-resend'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -12,6 +13,8 @@ import { Media } from './collections/Media.ts'
 import { BlogPost } from './collections/BlogPosts.ts'
 import { BlogCategories } from './collections/BlogCategories.ts'
 import { Staging } from './collections/Staging.ts'
+import { Newsletter } from './collections/Newsletter.ts'
+import { NewsletterCampaigns } from './collections/NewsletterCampaigns.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -63,7 +66,7 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Users, Media, BlogPost, BlogCategories, Staging],
+  collections: [Users, Media, BlogPost, BlogCategories, Staging, Newsletter, NewsletterCampaigns],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
   typescript: {
@@ -71,6 +74,11 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI ?? '',
+  }),
+  email: resendAdapter({
+    defaultFromAddress:'info@dawan.africa',
+    defaultFromName:'Dawan Africa',
+    apiKey: process.env.RESEND_API_KEY || '',
   }),
   sharp,
   plugins: [

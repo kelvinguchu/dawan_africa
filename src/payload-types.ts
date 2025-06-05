@@ -72,6 +72,8 @@ export interface Config {
     blogPosts: BlogPost;
     blogCategories: BlogCategory;
     staging: Staging;
+    newsletter: Newsletter;
+    newsletterCampaigns: NewsletterCampaign;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -83,6 +85,8 @@ export interface Config {
     blogPosts: BlogPostsSelect<false> | BlogPostsSelect<true>;
     blogCategories: BlogCategoriesSelect<false> | BlogCategoriesSelect<true>;
     staging: StagingSelect<false> | StagingSelect<true>;
+    newsletter: NewsletterSelect<false> | NewsletterSelect<true>;
+    newsletterCampaigns: NewsletterCampaignsSelect<false> | NewsletterCampaignsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -333,6 +337,67 @@ export interface Staging {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter".
+ */
+export interface Newsletter {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  status: 'subscribed' | 'unsubscribed' | 'bounced' | 'cleaned';
+  source?: ('popup' | 'footer' | 'website' | 'import' | 'admin') | null;
+  subscribedAt?: string | null;
+  unsubscribedAt?: string | null;
+  tags?:
+    | {
+        tag: string;
+        id?: string | null;
+      }[]
+    | null;
+  preferences?: {
+    frequency?: ('daily' | 'weekly' | 'monthly') | null;
+    categories?:
+      | {
+          category: string | BlogCategory;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletterCampaigns".
+ */
+export interface NewsletterCampaign {
+  id: string;
+  subject: string;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  status?: ('draft' | 'send_now') | null;
+  sentAt?: string | null;
+  sentCount?: number | null;
+  failedCount?: number | null;
+  errorLog?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -357,6 +422,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'staging';
         value: string | Staging;
+      } | null)
+    | ({
+        relationTo: 'newsletter';
+        value: string | Newsletter;
+      } | null)
+    | ({
+        relationTo: 'newsletterCampaigns';
+        value: string | NewsletterCampaign;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -518,6 +591,53 @@ export interface StagingSelect<T extends boolean = true> {
         toStatus?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter_select".
+ */
+export interface NewsletterSelect<T extends boolean = true> {
+  email?: T;
+  firstName?: T;
+  lastName?: T;
+  status?: T;
+  source?: T;
+  subscribedAt?: T;
+  unsubscribedAt?: T;
+  tags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  preferences?:
+    | T
+    | {
+        frequency?: T;
+        categories?:
+          | T
+          | {
+              category?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletterCampaigns_select".
+ */
+export interface NewsletterCampaignsSelect<T extends boolean = true> {
+  subject?: T;
+  content?: T;
+  status?: T;
+  sentAt?: T;
+  sentCount?: T;
+  failedCount?: T;
+  errorLog?: T;
   updatedAt?: T;
   createdAt?: T;
 }
