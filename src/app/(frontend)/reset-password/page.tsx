@@ -181,19 +181,6 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <Image
-              src="/logo.png"
-              alt="Dawan Africa"
-              width={160}
-              height={48}
-              priority
-              className="h-12 w-auto"
-            />
-          </Link>
-        </div>
 
         <Card className="border-slate-200 shadow-lg overflow-hidden">
           <CardHeader className="bg-white space-y-1 pb-6">

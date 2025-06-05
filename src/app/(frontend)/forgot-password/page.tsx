@@ -23,6 +23,10 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
     setMessage(null)
 
+    // Fix: Add timeout mechanism and improved error handling
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
     try {
       const response = await fetch('/api/users/forgot-password', {
         method: 'POST',
@@ -32,29 +36,84 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({
           email: email.trim(),
         }),
+        signal: controller.signal, // Add abort signal for timeout
       })
 
-      const data = await response.json()
+      clearTimeout(timeoutId) // Clear timeout if request completes
+
+      // Fix: Check content-type before parsing JSON
+      const contentType = response.headers.get('content-type')
+      let data
+
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json()
+        } catch (parseError) {
+          console.error('Failed to parse response JSON:', parseError)
+          throw new Error('Invalid response from server. Please try again.')
+        }
+      } else {
+        // Non-JSON response, likely an error
+        const textResponse = await response.text()
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
+      }
 
       if (response.ok) {
         setMessage({
           type: 'success',
-          text: 'Password reset instructions have been sent to your email address.',
+          text: data.message || 'Password reset instructions have been sent to your email address.',
         })
         setEmail('')
       } else {
+        // Enhanced error message extraction
+        let errorMessage = 'Failed to send reset email. Please try again.'
+
+        if (data) {
+          if (data.message) {
+            errorMessage = data.message
+          } else if (data.error) {
+            errorMessage = data.error
+          } else if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+            errorMessage = data.errors[0].message || data.errors[0]
+          }
+        }
+
+        // Provide specific error messages based on status codes
+        if (response.status === 400) {
+          errorMessage = data?.message || 'Please provide a valid email address.'
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests. Please wait a few minutes before trying again.'
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error occurred. Please try again later.'
+        }
+
         setMessage({
           type: 'error',
-          text: data.message || 'Failed to send reset email. Please try again.',
+          text: errorMessage,
         })
       }
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId) // Clear timeout if error occurs
+
       console.error('Forgot password error:', error)
+
+      let errorMessage = 'An unexpected error occurred. Please try again later.'
+
+      // Handle specific error types
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please check your connection and try again.'
+      } else if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message
+      } else if (!navigator.onLine) {
+        errorMessage = 'No internet connection. Please check your network and try again.'
+      }
+
       setMessage({
         type: 'error',
-        text: 'An unexpected error occurred. Please try again later.',
+        text: errorMessage,
       })
     } finally {
+      clearTimeout(timeoutId) // Ensure timeout is always cleared
       setIsLoading(false)
     }
   }
@@ -62,20 +121,6 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <Image
-              src="/logo.png"
-              alt="Dawan Africa"
-              width={160}
-              height={48}
-              priority
-              className="h-12 w-auto"
-            />
-          </Link>
-        </div>
-
         <Card className="border-slate-200 shadow-lg overflow-hidden">
           <CardHeader className="bg-white space-y-1 pb-6">
             <CardTitle className="text-2xl font-semibold text-slate-900 text-center">

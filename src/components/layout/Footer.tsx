@@ -119,17 +119,17 @@ const Footer: React.FC = () => {
       // Safe to parse JSON now
       const data = await response.json()
 
-      // Check if user was already subscribed
-      const isAlreadySubscribed = data.message?.includes('already subscribed')
+        // Check if user was already subscribed
+        const isAlreadySubscribed = data.message?.includes('already subscribed')
 
-      setSubscriptionMessage({
-        type: isAlreadySubscribed ? 'info' : 'success',
-        text: isAlreadySubscribed ? data.message : 'Successfully subscribed to our newsletter!',
-      })
+        setSubscriptionMessage({
+          type: isAlreadySubscribed ? 'info' : 'success',
+          text: isAlreadySubscribed ? data.message : 'Successfully subscribed to our newsletter!',
+        })
 
-      // Only reset email if it's a new subscription, not if already subscribed
-      if (!isAlreadySubscribed) {
-        setEmail('')
+        // Only reset email if it's a new subscription, not if already subscribed
+        if (!isAlreadySubscribed) {
+          setEmail('')
       }
     } catch (error) {
       console.error('Newsletter subscription error:', error)
