@@ -263,7 +263,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Remove contact from Resend if RESEND_API_KEY is available
-    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_ID) {
+    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_KEY) {
       try {
         const { Resend } = await import('resend')
         const resend = new Resend(process.env.RESEND_API_KEY)
@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
         // Remove contact from Resend by email
         await resend.contacts.remove({
           email: normalizedEmail,
-          audienceId: process.env.RESEND_AUDIENCE_ID,
+          audienceId: process.env.RESEND_AUDIENCE_KEY,
         })
 
         console.log(`Successfully removed ${normalizedEmail} from Resend audience`)
@@ -282,7 +282,7 @@ export async function GET(req: NextRequest) {
       }
     } else {
       console.warn(
-        'RESEND_API_KEY or RESEND_AUDIENCE_ID not configured - contact not removed from Resend',
+        'RESEND_API_KEY or RESEND_AUDIENCE_KEY not configured - contact not removed from Resend',
       )
     }
 
@@ -418,7 +418,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Remove contact from Resend if RESEND_API_KEY is available
-    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_ID) {
+    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_KEY) {
       try {
         const { Resend } = await import('resend')
         const resend = new Resend(process.env.RESEND_API_KEY)
@@ -426,7 +426,7 @@ export async function POST(req: NextRequest) {
         // Remove contact from Resend by email
         await resend.contacts.remove({
           email: normalizedEmail,
-          audienceId: process.env.RESEND_AUDIENCE_ID,
+          audienceId: process.env.RESEND_AUDIENCE_KEY,
         })
 
         console.log(`Successfully removed ${normalizedEmail} from Resend audience`)
@@ -437,7 +437,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       console.warn(
-        'RESEND_API_KEY or RESEND_AUDIENCE_ID not configured - contact not removed from Resend',
+        'RESEND_API_KEY or RESEND_AUDIENCE_KEY not configured - contact not removed from Resend',
       )
     }
 

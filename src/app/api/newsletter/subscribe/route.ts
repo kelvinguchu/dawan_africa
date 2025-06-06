@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase().trim(),
           firstName: firstName?.trim() || '',
           lastName: lastName?.trim() || '',
-          status: 'subscribed',
           source,
           subscribedAt: new Date().toISOString(),
         },
@@ -105,24 +104,11 @@ export async function POST(request: NextRequest) {
           const subscriber = existingSubscriber.docs[0]
           isNewSubscriber = false
 
-          if (subscriber.status === 'subscribed') {
-            return NextResponse.json(
-              { message: 'You are already subscribed to our newsletter!' },
-              { status: 200 },
-            )
-          } else {
-            // Reactivate subscription in our database
-            payloadSubscriber = await payload.update({
-              collection: 'newsletter',
-              id: subscriber.id,
-              data: {
-                status: 'subscribed',
-                firstName: firstName || subscriber.firstName,
-                lastName: lastName || subscriber.lastName,
-                subscribedAt: new Date().toISOString(),
-              },
-            })
-          }
+          // Since we only store subscribed emails, if found, user is already subscribed
+          return NextResponse.json(
+            { message: 'You are already subscribed to our newsletter!' },
+            { status: 200 },
+          )
         } else {
           // This shouldn't happen, but if no existing subscriber found, re-throw the original error
           throw createError
@@ -179,7 +165,7 @@ export async function POST(request: NextRequest) {
       message,
       subscriber: {
         email: payloadSubscriber.email,
-        status: payloadSubscriber.status,
+        // All emails in database are subscribed by definition
         // Removed 'id' field to prevent exposure of internal database IDs
       },
     })
@@ -205,84 +191,5 @@ async function sendWelcomeEmail(payload: any, email: string, firstName?: string)
   } catch (error) {
     console.error('Failed to send welcome email:', error)
     // Don't throw error as subscription was successful
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const email = searchParams.get('email')
-
-    // Enhanced email validation for DELETE requests as well
-    if (!email || !isValidEmail(email)) {
-      return NextResponse.json(
-        {
-          error: 'Please provide a valid email address',
-        },
-        { status: 400 },
-      )
-    }
-
-    const payload = await getPayload({ config })
-
-    // Find subscription in our database
-    const subscription = await payload.find({
-      collection: 'newsletter',
-      where: {
-        email: { equals: email.toLowerCase().trim() },
-      },
-    })
-
-    if (subscription.docs.length > 0) {
-      // Update subscription status to unsubscribed in our database
-      await payload.update({
-        collection: 'newsletter',
-        id: subscription.docs[0].id,
-        data: {
-          status: 'unsubscribed',
-          unsubscribedAt: new Date().toISOString(),
-        },
-      })
-
-      // Also unsubscribe from Resend audience using deferred client creation
-      try {
-        // Find the contact in Resend and update their status
-        if (process.env.RESEND_AUDIENCE_KEY) {
-          const resend = getResend()
-          await resend.contacts.update({
-            email: email.toLowerCase().trim(),
-            unsubscribed: true,
-            audienceId: process.env.RESEND_AUDIENCE_KEY,
-          })
-
-          console.log('✅ Contact unsubscribed from Resend audience:', email)
-        }
-      } catch (resendError: any) {
-        console.error('❌ Failed to unsubscribe from Resend audience:', {
-          email,
-          error: resendError.message,
-        })
-        // Continue even if Resend unsubscribe fails
-      }
-
-      return NextResponse.json({
-        message: 'Successfully unsubscribed from newsletter',
-      })
-    } else {
-      return NextResponse.json(
-        { error: 'Email not found in our subscription list' },
-        { status: 404 },
-      )
-    }
-  } catch (error) {
-    console.error('Newsletter unsubscribe error:', error)
-
-    return NextResponse.json(
-      {
-        error: 'Failed to unsubscribe from newsletter',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 },
-    )
   }
 }
