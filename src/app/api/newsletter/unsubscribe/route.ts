@@ -256,15 +256,35 @@ export async function GET(req: NextRequest) {
 
     const subscriber = subscribers.docs[0]
 
-    // Update subscriber status to unsubscribed
-    await payload.update({
+    // Remove subscriber from database entirely
+    await payload.delete({
       collection: 'newsletter',
       id: subscriber.id,
-      data: {
-        status: 'unsubscribed',
-        unsubscribedAt: new Date().toISOString(),
-      },
     })
+
+    // Remove contact from Resend if RESEND_API_KEY is available
+    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_ID) {
+      try {
+        const { Resend } = await import('resend')
+        const resend = new Resend(process.env.RESEND_API_KEY)
+
+        // Remove contact from Resend by email
+        await resend.contacts.remove({
+          email: normalizedEmail,
+          audienceId: process.env.RESEND_AUDIENCE_ID,
+        })
+
+        console.log(`Successfully removed ${normalizedEmail} from Resend audience`)
+      } catch (resendError) {
+        // Log the error but don't fail the unsubscribe process
+        console.error('Failed to remove contact from Resend:', resendError)
+        // The unsubscribe still succeeded from our database perspective
+      }
+    } else {
+      console.warn(
+        'RESEND_API_KEY or RESEND_AUDIENCE_ID not configured - contact not removed from Resend',
+      )
+    }
 
     // Return success page
     const successHTML = `
@@ -331,7 +351,7 @@ export async function GET(req: NextRequest) {
     <div class="container">
         <div class="success-icon">✅</div>
         <h1>Successfully Unsubscribed</h1>
-        <p>You have been successfully unsubscribed from our newsletter.</p>
+        <p>You have been successfully removed from our newsletter and all email systems.</p>
         <p>We're sorry to see you go! If you change your mind, you can always subscribe again on our website.</p>
         <div style="margin-top: 30px;">
             <a href="https://dawan.africa" class="btn">Visit Our Website</a>
@@ -391,19 +411,39 @@ export async function POST(req: NextRequest) {
 
     const subscriber = subscribers.docs[0]
 
-    // Update subscriber status to unsubscribed
-    await payload.update({
+    // Remove subscriber from database entirely
+    await payload.delete({
       collection: 'newsletter',
       id: subscriber.id,
-      data: {
-        status: 'unsubscribed',
-        unsubscribedAt: new Date().toISOString(),
-      },
     })
+
+    // Remove contact from Resend if RESEND_API_KEY is available
+    if (process.env.RESEND_API_KEY && process.env.RESEND_AUDIENCE_ID) {
+      try {
+        const { Resend } = await import('resend')
+        const resend = new Resend(process.env.RESEND_API_KEY)
+
+        // Remove contact from Resend by email
+        await resend.contacts.remove({
+          email: normalizedEmail,
+          audienceId: process.env.RESEND_AUDIENCE_ID,
+        })
+
+        console.log(`Successfully removed ${normalizedEmail} from Resend audience`)
+      } catch (resendError) {
+        // Log the error but don't fail the unsubscribe process
+        console.error('Failed to remove contact from Resend:', resendError)
+        // The unsubscribe still succeeded from our database perspective
+      }
+    } else {
+      console.warn(
+        'RESEND_API_KEY or RESEND_AUDIENCE_ID not configured - contact not removed from Resend',
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Successfully unsubscribed from newsletter',
+      message: 'Successfully unsubscribed from newsletter and removed from all systems',
     })
   } catch (error) {
     console.error('Unsubscribe error:', error)

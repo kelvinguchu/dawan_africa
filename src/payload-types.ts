@@ -346,10 +346,8 @@ export interface Newsletter {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
-  status: 'subscribed' | 'unsubscribed' | 'bounced' | 'cleaned';
   source?: ('popup' | 'footer' | 'website' | 'import' | 'admin') | null;
   subscribedAt?: string | null;
-  unsubscribedAt?: string | null;
   tags?:
     | {
         tag: string;
@@ -606,10 +604,8 @@ export interface NewsletterSelect<T extends boolean = true> {
   email?: T;
   firstName?: T;
   lastName?: T;
-  status?: T;
   source?: T;
   subscribedAt?: T;
-  unsubscribedAt?: T;
   tags?:
     | T
     | {

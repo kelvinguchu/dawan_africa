@@ -8,7 +8,7 @@ export const Newsletter: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'status', 'subscribedAt', 'source'],
+    defaultColumns: ['email', 'subscribedAt', 'source'],
     group: 'Marketing',
   },
   access: {
@@ -30,14 +30,6 @@ export const Newsletter: CollectionConfig = {
         // Set subscribedAt timestamp when creating a new subscription
         if (operation === 'create' && !data.subscribedAt) {
           data.subscribedAt = new Date().toISOString()
-        }
-
-        // Set unsubscribedAt timestamp when status changes to 'unsubscribed'
-        if (operation === 'update' && data.status === 'unsubscribed') {
-          // Only set unsubscribedAt if it's not already set and the status is actually changing
-          if (!data.unsubscribedAt && originalDoc?.status !== 'unsubscribed') {
-            data.unsubscribedAt = new Date().toISOString()
-          }
         }
 
         return data
@@ -62,30 +54,7 @@ export const Newsletter: CollectionConfig = {
       type: 'text',
       label: 'Last Name',
     },
-    {
-      name: 'status',
-      type: 'select',
-      required: true,
-      defaultValue: 'subscribed',
-      options: [
-        {
-          label: 'Subscribed',
-          value: 'subscribed',
-        },
-        {
-          label: 'Unsubscribed',
-          value: 'unsubscribed',
-        },
-        {
-          label: 'Bounced',
-          value: 'bounced',
-        },
-        {
-          label: 'Cleaned',
-          value: 'cleaned',
-        },
-      ],
-    },
+
     {
       name: 'source',
       type: 'select',
@@ -125,17 +94,7 @@ export const Newsletter: CollectionConfig = {
         },
       },
     },
-    {
-      name: 'unsubscribedAt',
-      type: 'date',
-      label: 'Unsubscribed At',
-      admin: {
-        condition: (data) => data.status === 'unsubscribed',
-        date: {
-          pickerAppearance: 'dayAndTime',
-        },
-      },
-    },
+
     {
       name: 'tags',
       type: 'array',

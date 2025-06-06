@@ -23,6 +23,11 @@ function redactEmail(email: string): string {
   return `${redactedLocal}@${domain}`
 }
 
+// Utility function to normalize email addresses for consistent token generation
+function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim()
+}
+
 // Secure HMAC token generation for unsubscribe links
 function generateSecureUnsubscribeToken(email: string): string {
   const secret = process.env.UNSUBSCRIBE_TOKEN_SECRET
@@ -30,8 +35,10 @@ function generateSecureUnsubscribeToken(email: string): string {
     throw new Error('UNSUBSCRIBE_TOKEN_SECRET environment variable is required')
   }
 
+  // Fix: Normalize email before generating token to match verification logic
+  const normalizedEmail = normalizeEmail(email)
   const timestamp = Date.now().toString()
-  const data = `${email}:${timestamp}`
+  const data = `${normalizedEmail}:${timestamp}`
   const hmac = crypto.createHmac('sha256', secret)
   hmac.update(data)
   const signature = hmac.digest('hex')
@@ -546,12 +553,9 @@ export const NewsletterCampaigns: CollectionConfig = {
             try {
               console.log('📧 Processing campaign:', doc.subject)
 
-              // Get newsletter subscribers
+              // Get newsletter subscribers (all emails in DB are subscribed)
               const subscribers = await req.payload.find({
                 collection: 'newsletter',
-                where: {
-                  status: { equals: 'subscribed' },
-                },
                 limit: 10000,
               })
 
@@ -600,26 +604,27 @@ export const NewsletterCampaigns: CollectionConfig = {
                 console.log(`📧 Sending email ${index + 1}/${total} to: ${redactedEmail}`)
 
                 try {
-                  // Fix: Generate secure unsubscribe token instead of using subscriber.id
+                  // Fix: Generate secure unsubscribe token with normalized email
+                  const normalizedEmail = normalizeEmail(subscriber.email)
                   const secureToken = generateSecureUnsubscribeToken(subscriber.email)
-                  const unsubscribeUrl = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://dawan.africa'}/api/newsletter/unsubscribe?email=${encodeURIComponent(subscriber.email)}&token=${encodeURIComponent(secureToken)}`
+                  const unsubscribeUrl = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://dawan.africa'}/api/newsletter/unsubscribe?email=${encodeURIComponent(normalizedEmail)}&token=${encodeURIComponent(secureToken)}`
 
                   // Generate both HTML and text versions
                   const htmlContent = await generateEmailHTML(
                     doc.content,
                     doc.subject,
-                    subscriber.email,
+                    normalizedEmail,
                     unsubscribeUrl,
                   )
                   const textContent = generateEmailText(
                     doc.content,
                     doc.subject,
-                    subscriber.email,
+                    normalizedEmail,
                     unsubscribeUrl,
                   )
 
                   const emailResult = await req.payload.sendEmail({
-                    to: subscriber.email,
+                    to: subscriber.email, // Use original email for delivery
                     subject: doc.subject,
                     html: htmlContent,
                     text: textContent,

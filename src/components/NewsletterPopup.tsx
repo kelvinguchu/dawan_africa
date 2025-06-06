@@ -160,10 +160,6 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
     }
   }
 
-  const handleSkip = () => {
-    handleClose()
-  }
-
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       // Dialog is being closed - call handleClose to set localStorage flag
@@ -174,7 +170,7 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md md:max-w-lg border-0 p-0 overflow-hidden mx-4 w-[calc(100vw-2rem)]">
+      <DialogContent className="sm:max-w-md md:max-w-lg border-0 p-0 overflow-hidden w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md md:max-w-lg">
         {/* Header with logo and close button */}
         <div className="relative bg-slate-900 p-6 sm:p-8 text-white">
           <Button
@@ -198,7 +194,7 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
               />
             </div>
             <DialogHeader>
-              <DialogTitle className="text-xl text-center sm:text-2xl font-bold text-white mb-3">
+              <DialogTitle className="text-sm text-center sm:text-2xl font-bold text-white mb-3">
                 Stay Informed with African News
               </DialogTitle>
             </DialogHeader>
@@ -273,10 +269,10 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
               </Alert>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-3">
+            <div className="flex flex-col pt-3">
               <Button
                 type="submit"
-                className="flex-1 h-11 bg-[#2aaac6] hover:bg-[#1e90a6] text-white font-medium"
+                className="w-full h-11 bg-[#2aaac6] hover:bg-[#1e90a6] text-white font-medium"
                 disabled={isLoading || !email.trim()}
               >
                 {isLoading ? (
@@ -287,16 +283,6 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
                 ) : (
                   'Subscribe to Newsletter'
                 )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSkip}
-                disabled={isLoading}
-                className="h-11 px-6 border-slate-200 text-slate-600 hover:bg-slate-50"
-              >
-                Maybe Later
               </Button>
             </div>
 
