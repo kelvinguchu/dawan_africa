@@ -1,3 +1,5 @@
+import { buildUnsubscribeUrl, escapeUrlForHtml } from '@/utils/unsubscribe'
+
 interface WelcomeEmailParams {
   firstName?: string
   email: string
@@ -16,6 +18,9 @@ export function generateWelcomeEmail({
 
   // Use configurable site URL from environment variable with fallback
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dawan.africa'
+
+  // Generate secure unsubscribe URL with token
+  const unsubscribeUrl = buildUnsubscribeUrl(email)
 
   const html = `
 <!DOCTYPE html>
@@ -59,7 +64,7 @@ export function generateWelcomeEmail({
       <p>
         You received this email because you subscribed to our newsletter.
         <br>
-        <a href="${siteUrl}/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}" style="color: #2aaac6;">Unsubscribe</a> | 
+        <a href="${escapeUrlForHtml(unsubscribeUrl)}" style="color: #2aaac6;">Unsubscribe</a> | 
         <a href="${siteUrl}" style="color: #2aaac6;">Visit our website</a>
       </p>
       <p>

@@ -3,6 +3,7 @@ import config from '@/payload.config'
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { generateWelcomeEmail } from '@/templates/welcome-email'
+import { buildUnsubscribeUrl } from '@/utils/unsubscribe'
 
 // Defer Resend client creation to avoid synchronous errors
 function getResend(): Resend {
@@ -183,10 +184,17 @@ async function sendWelcomeEmail(payload: any, email: string, firstName?: string)
     // Generate email content using template
     const { subject, html } = generateWelcomeEmail({ firstName, email })
 
+    // Generate secure unsubscribe URL for headers
+    const unsubscribeUrl = buildUnsubscribeUrl(email)
+
     await payload.sendEmail({
       to: email,
       subject,
       html,
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:info@dawan.africa?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     })
   } catch (error) {
     console.error('Failed to send welcome email:', error)

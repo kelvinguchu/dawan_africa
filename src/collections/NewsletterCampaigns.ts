@@ -3,6 +3,7 @@ import { convertLexicalToHTMLAsync } from '@payloadcms/richtext-lexical/html-asy
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import DOMPurify from 'isomorphic-dompurify'
 import crypto from 'crypto'
+import { buildUnsubscribeUrl, escapeUrlForHtml } from '@/utils/unsubscribe'
 
 // HTML escaping function to prevent XSS
 function escapeHtml(unsafe: string): string {
@@ -28,24 +29,7 @@ function normalizeEmail(email: string): string {
   return email.toLowerCase().trim()
 }
 
-// Secure HMAC token generation for unsubscribe links
-function generateSecureUnsubscribeToken(email: string): string {
-  const secret = process.env.UNSUBSCRIBE_TOKEN_SECRET
-  if (!secret) {
-    throw new Error('UNSUBSCRIBE_TOKEN_SECRET environment variable is required')
-  }
-
-  // Fix: Normalize email before generating token to match verification logic
-  const normalizedEmail = normalizeEmail(email)
-  const timestamp = Date.now().toString()
-  const data = `${normalizedEmail}:${timestamp}`
-  const hmac = crypto.createHmac('sha256', secret)
-  hmac.update(data)
-  const signature = hmac.digest('hex')
-
-  // Return timestamp:signature format for verification
-  return `${timestamp}:${signature}`
-}
+// Note: Token generation is now handled by the centralized utility function in @/utils/unsubscribe
 
 // Email template function (simplified without relationships)
 async function generateEmailHTML(
@@ -319,7 +303,7 @@ async function generateEmailHTML(
             <div class="unsubscribe">
                 <p>This email was sent to ${subscriberEmail}</p>
                 <p>
-                    <a href="${unsubscribeUrl}">Unsubscribe</a> | 
+                    <a href="${escapeHtml(unsubscribeUrl)}">Unsubscribe</a> | 
                     <a href="https://dawan.africa/newsletter">Update Preferences</a>
                 </p>
             </div>
@@ -603,12 +587,34 @@ export const NewsletterCampaigns: CollectionConfig = {
                 const redactedEmail = redactEmail(subscriber.email)
                 console.log(`📧 Sending email ${index + 1}/${total} to: ${redactedEmail}`)
 
-                try {
-                  // Fix: Generate secure unsubscribe token with normalized email
-                  const normalizedEmail = normalizeEmail(subscriber.email)
-                  const secureToken = generateSecureUnsubscribeToken(normalizedEmail)
-                  const unsubscribeUrl = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://dawan.africa'}/api/newsletter/unsubscribe?email=${encodeURIComponent(normalizedEmail)}&token=${encodeURIComponent(secureToken)}`
+                const normalizedEmail = normalizeEmail(subscriber.email)
+                let unsubscribeUrl: string
 
+                try {
+                  // Use the centralized utility function for secure unsubscribe URLs
+                  unsubscribeUrl = buildUnsubscribeUrl(subscriber.email)
+
+                  console.log('🔑 Unsubscribe URL generation debug:', {
+                    email: `${normalizedEmail.substring(0, 3)}***`,
+                    urlGenerated: !!unsubscribeUrl,
+                    hasSecret: !!process.env.UNSUBSCRIBE_TOKEN_SECRET,
+                  })
+                } catch (urlError) {
+                  console.error(
+                    `❌ Fatal error during unsubscribe URL generation for ${redactedEmail}:`,
+                    urlError,
+                  )
+                  // This prevents sending emails with broken unsubscribe links.
+                  const errorMessage =
+                    urlError instanceof Error ? urlError.message : 'Unknown error'
+                  return {
+                    success: false,
+                    subscriber: redactedEmail,
+                    error: `Unsubscribe URL generation failed: ${errorMessage}`,
+                  }
+                }
+
+                try {
                   // Generate both HTML and text versions
                   const htmlContent = await generateEmailHTML(
                     doc.content,
@@ -629,6 +635,10 @@ export const NewsletterCampaigns: CollectionConfig = {
                     html: htmlContent,
                     text: textContent,
                     replyTo: 'info@dawan.africa',
+                    headers: {
+                      'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:info@dawan.africa?subject=unsubscribe>`,
+                      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                    },
                   })
 
                   console.log('📧 Email result:', emailResult)
@@ -645,7 +655,7 @@ export const NewsletterCampaigns: CollectionConfig = {
                   return { success: true, subscriber: redactedEmail }
                 } catch (error) {
                   const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-                  console.log('📧 Email failed:', errorMessage)
+                  console.log('📧 Email sending failed:', errorMessage)
                   return { success: false, subscriber: redactedEmail, error: errorMessage }
                 }
               }
