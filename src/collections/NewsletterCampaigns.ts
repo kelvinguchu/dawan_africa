@@ -606,7 +606,7 @@ export const NewsletterCampaigns: CollectionConfig = {
                 try {
                   // Fix: Generate secure unsubscribe token with normalized email
                   const normalizedEmail = normalizeEmail(subscriber.email)
-                  const secureToken = generateSecureUnsubscribeToken(subscriber.email)
+                  const secureToken = generateSecureUnsubscribeToken(normalizedEmail)
                   const unsubscribeUrl = `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://dawan.africa'}/api/newsletter/unsubscribe?email=${encodeURIComponent(normalizedEmail)}&token=${encodeURIComponent(secureToken)}`
 
                   // Generate both HTML and text versions
