@@ -581,7 +581,7 @@ const PDFBlock: React.FC<{
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const pdfUrl = typeof pdf === 'string' ? null : pdf?.url
+  const pdfUrl = typeof pdf === 'string' ? pdf : pdf?.url
   const pdfObj = typeof pdf === 'string' ? null : pdf
   const fileName = pdfObj?.filename || 'Document'
   const caption = pdfObj?.caption
@@ -770,9 +770,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ block, hideTextOve
           hideTextOverlay={hideTextOverlay}
         />
       )
-    // Add cases for other block types like 'recentBlogPosts', etc.
-    // case 'recentBlogPosts':
-    //   return <RecentBlogPostsBlock posts={block.shownPosts} />;
     default:
       return (
         <div className="my-8 p-6 bg-amber-50 border border-amber-300 rounded-lg">
