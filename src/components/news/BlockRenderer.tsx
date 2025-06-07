@@ -205,100 +205,120 @@ const RichTextBlock: React.FC<{ content: any }> = ({ content }) => {
               return null
             case 'upload':
               // Handle upload nodes from Lexical editor
-              if (node.value && typeof node.value === 'object') {
-                const uploadData = node.value
-                const isVideo = uploadData.mimeType?.startsWith('video/')
-                const isPDF = uploadData.mimeType === 'application/pdf'
-                const isImage = uploadData.mimeType?.startsWith('image/')
+              if (!node.value) return null
 
-                if (isVideo) {
-                  return (
-                    <figure key={index} className="my-8">
-                      <div className="rounded-lg overflow-hidden shadow-lg bg-black">
-                        <video
-                          src={uploadData.url}
-                          controls
-                          className="w-full h-auto"
-                          preload="metadata"
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      </div>
-                      {uploadData.caption && (
-                        <figcaption className="text-center text-gray-600 mt-3 text-sm">
-                          {uploadData.caption}
-                        </figcaption>
-                      )}
-                    </figure>
-                  )
-                } else if (isPDF) {
-                  return (
-                    <div
-                      key={index}
-                      className="my-8 border border-gray-300 rounded-lg overflow-hidden"
-                    >
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <FileText className="h-5 w-5 text-red-600 mr-2" />
-                            <div>
-                              <h3 className="font-medium text-gray-900">
-                                {uploadData.filename || 'Document'}
-                              </h3>
-                              {uploadData.caption && (
-                                <p className="text-sm text-gray-600 mt-1">{uploadData.caption}</p>
-                              )}
-                            </div>
+              const uploadData: any =
+                typeof node.value === 'string'
+                  ? null // TODO: resolve from a pre-loaded media map if available
+                  : node.value
+
+              if (!uploadData) {
+                // If we have a string ID but no resolved data, show a placeholder
+                return (
+                  <div
+                    key={index}
+                    className="my-8 p-4 bg-gray-50 border border-gray-300 rounded-lg text-center"
+                  >
+                    <p className="text-gray-600 text-sm">
+                      Media content (ID: {typeof node.value === 'string' ? node.value : 'unknown'})
+                      - requires population to display
+                    </p>
+                  </div>
+                )
+              }
+
+              const isVideo = uploadData.mimeType?.startsWith('video/')
+              const isPDF = uploadData.mimeType === 'application/pdf'
+              const isImage = uploadData.mimeType?.startsWith('image/')
+
+              if (isVideo) {
+                return (
+                  <figure key={index} className="my-8">
+                    <div className="rounded-lg overflow-hidden shadow-lg bg-black">
+                      <video
+                        src={uploadData.url}
+                        controls
+                        className="w-full h-auto"
+                        preload="metadata"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                    {uploadData.caption && (
+                      <figcaption className="text-center text-gray-600 mt-3 text-sm">
+                        {uploadData.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                )
+              } else if (isPDF) {
+                return (
+                  <div
+                    key={index}
+                    className="my-8 border border-gray-300 rounded-lg overflow-hidden"
+                  >
+                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-red-600 mr-2" />
+                          <div>
+                            <h3 className="font-medium text-gray-900">
+                              {uploadData.filename || 'Document'}
+                            </h3>
+                            {uploadData.caption && (
+                              <p className="text-sm text-gray-600 mt-1">{uploadData.caption}</p>
+                            )}
                           </div>
-                          <a
-                            href={uploadData.url}
-                            download
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </a>
                         </div>
-                      </div>
-                      <div className="bg-white">
-                        <iframe
-                          src={`${uploadData.url}#toolbar=1`}
-                          width="100%"
-                          height={600}
-                          className="border-0"
-                          title={uploadData.filename || 'Document'}
+                        <a
+                          href={uploadData.url}
+                          download
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                         >
-                          <p>
-                            Your browser does not support PDFs.
-                            <a href={uploadData.url} className="text-blue-600 hover:text-blue-800">
-                              Download the PDF
-                            </a>
-                          </p>
-                        </iframe>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </a>
                       </div>
                     </div>
-                  )
-                } else if (isImage) {
-                  return (
-                    <figure key={index} className="my-8">
-                      <div className="rounded-lg overflow-hidden shadow-lg">
-                        <Image
-                          src={uploadData.url}
-                          alt={uploadData.alt || ''}
-                          width={uploadData.width || 800}
-                          height={uploadData.height || 600}
-                          className="w-full h-auto"
-                        />
-                      </div>
-                      {uploadData.caption && (
-                        <figcaption className="text-center text-gray-600 mt-3 text-sm">
-                          {uploadData.caption}
-                        </figcaption>
-                      )}
-                    </figure>
-                  )
-                }
+                    <div className="bg-white">
+                      <iframe
+                        src={`${uploadData.url}#toolbar=1`}
+                        width="100%"
+                        height={600}
+                        className="border-0"
+                        title={uploadData.filename || 'Document'}
+                      >
+                        <p>
+                          Your browser does not support PDFs.
+                          <a href={uploadData.url} className="text-blue-600 hover:text-blue-800">
+                            Download the PDF
+                          </a>
+                        </p>
+                      </iframe>
+                    </div>
+                  </div>
+                )
+              } else if (isImage) {
+                return (
+                  <figure key={index} className="my-8">
+                    <div className="rounded-lg overflow-hidden shadow-lg">
+                      <Image
+                        src={uploadData.url}
+                        alt={uploadData.alt || ''}
+                        width={uploadData.width || 800}
+                        height={uploadData.height || 600}
+                        className="w-full h-auto"
+                      />
+                    </div>
+                    {uploadData.caption && (
+                      <figcaption className="text-center text-gray-600 mt-3 text-sm">
+                        {uploadData.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                )
               }
+
               return null
             case 'link':
               const url = node.url || ''
@@ -433,7 +453,7 @@ const VideoBlock: React.FC<{
   controls?: boolean
   loop?: boolean
 }> = ({ video, autoplay = false, muted = false, controls = true, loop = false }) => {
-  const videoUrl = typeof video === 'string' ? null : video?.url
+  const videoUrl = typeof video === 'string' ? video : (video as Media | null)?.url
   const videoObj = typeof video === 'string' ? null : video
   const caption = videoObj?.caption // Get caption from media object
 

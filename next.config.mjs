@@ -3,7 +3,11 @@ import withPWA from 'next-pwa'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Your Next.js config here
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '500mb',
+    },
+  },
 }
 
 const withPWAConfig = withPWA({
