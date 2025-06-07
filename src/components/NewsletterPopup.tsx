@@ -170,17 +170,9 @@ export const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ delay = 5000 }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md md:max-w-lg border-0 p-0 overflow-hidden w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md md:max-w-lg">
+      <DialogContent className="sm:max-w-md md:max-w-lg border-0 p-0 overflow-hidden w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-auto">
         {/* Header with logo and close button */}
         <div className="relative bg-slate-900 p-6 sm:p-8 text-white">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-3 top-3 text-white hover:bg-white/20 h-8 w-8"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
 
           <div className="text-center pr-8">
             <div className="mb-6">

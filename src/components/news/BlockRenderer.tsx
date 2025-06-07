@@ -445,7 +445,84 @@ const CoverBlock: React.FC<{
   )
 }
 
-// Video Block Component
+// Loading skeleton displayed while video metadata loads
+const VideoSkeleton: React.FC = () => (
+  <div className="my-8">
+    <div className="rounded-lg overflow-hidden shadow-lg bg-gray-100 animate-pulse">
+      <div className="aspect-video bg-gray-200 flex items-center justify-center">
+        <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
+          <div className="w-0 h-0 border-l-[12px] border-l-gray-400 border-y-[8px] border-y-transparent ml-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+// Optimized video component with progressive loading and error handling
+const OptimizedVideo: React.FC<{
+  videoUrl: string
+  caption?: string
+  autoplay?: boolean
+  muted?: boolean
+  controls?: boolean
+  loop?: boolean
+}> = ({ videoUrl, caption, autoplay = false, muted = false, controls = true, loop = false }) => {
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [hasError, setHasError] = React.useState(false)
+
+  return (
+    <figure className="my-8">
+      <div className="rounded-lg overflow-hidden shadow-lg bg-black relative">
+        {/* Loading skeleton - shown until video metadata loads */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10">
+            <VideoSkeleton />
+          </div>
+        )}
+
+        {/* Error state */}
+        {hasError && (
+          <div className="aspect-video bg-gray-100 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <FileText className="h-12 w-12 mx-auto mb-2" />
+              <p>Unable to load video</p>
+            </div>
+          </div>
+        )}
+
+        {/* Actual video element */}
+        <video
+          src={videoUrl}
+          autoPlay={autoplay}
+          muted={muted}
+          controls={controls}
+          loop={loop}
+          preload="metadata" // Load metadata only for faster initial loading
+          playsInline // Required for iOS inline playback
+          className={`w-full h-auto transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          style={{ aspectRatio: '16/9' }} // Prevent layout shift
+          onLoadedMetadata={() => {
+            setIsLoading(false)
+          }}
+          onError={() => {
+            setIsLoading(false)
+            setHasError(true)
+          }}
+          aria-label={caption || 'Video content'}
+        >
+          <source src={videoUrl} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
+      {caption && (
+        <figcaption className="text-center text-gray-600 mt-3 text-sm">{caption}</figcaption>
+      )}
+    </figure>
+  )
+}
+
+// Video block component that handles different video input types
 const VideoBlock: React.FC<{
   video?: Media | string | null
   autoplay?: boolean
@@ -455,35 +532,27 @@ const VideoBlock: React.FC<{
 }> = ({ video, autoplay = false, muted = false, controls = true, loop = false }) => {
   const videoUrl = typeof video === 'string' ? video : (video as Media | null)?.url
   const videoObj = typeof video === 'string' ? null : video
-  const caption = videoObj?.caption // Get caption from media object
+  const caption = videoObj?.caption
 
   if (!videoUrl) {
     return (
       <div className="my-8 p-6 bg-gray-50 border border-gray-300 rounded-lg text-center">
+        <FileText className="h-12 w-12 mx-auto mb-2 text-gray-400" />
         <p className="text-gray-600">Video not available</p>
       </div>
     )
   }
 
+  // Video element handles its own loading states
   return (
-    <figure className="my-8">
-      <div className="rounded-lg overflow-hidden shadow-lg bg-black">
-        <video
-          src={videoUrl}
-          autoPlay={autoplay}
-          muted={muted}
-          controls={controls}
-          loop={loop}
-          className="w-full h-auto"
-          preload="metadata"
-        >
-          Your browser does not support the video tag.
-        </video>
-      </div>
-      {caption && (
-        <figcaption className="text-center text-gray-600 mt-3 text-sm">{caption}</figcaption>
-      )}
-    </figure>
+    <OptimizedVideo
+      videoUrl={videoUrl}
+      caption={caption || undefined}
+      autoplay={autoplay}
+      muted={muted}
+      controls={controls}
+      loop={loop}
+    />
   )
 }
 
@@ -494,61 +563,169 @@ const PDFBlock: React.FC<{
   showPreview?: boolean
   previewHeight?: number
 }> = ({ pdf, showDownloadButton = true, showPreview = true, previewHeight = 600 }) => {
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    // Detect mobile devices
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i
+      return mobileRegex.test(userAgent) || window.innerWidth <= 768
+    }
+
+    setIsMobile(checkMobile())
+
+    // Listen for resize to handle orientation changes
+    const handleResize = () => setIsMobile(checkMobile())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const pdfUrl = typeof pdf === 'string' ? null : pdf?.url
   const pdfObj = typeof pdf === 'string' ? null : pdf
   const fileName = pdfObj?.filename || 'Document'
-  const caption = pdfObj?.caption // Get caption from media object
+  const caption = pdfObj?.caption
+  const fileSize = pdfObj?.filesize ? `${Math.round(pdfObj.filesize / 1024)} KB` : null
 
   if (!pdfUrl) {
     return (
-      <div className="my-8 p-6 bg-gray-50 border border-gray-300 rounded-lg text-center">
-        <p className="text-gray-600">PDF document not available</p>
+      <div className="my-8 p-6 bg-slate-50 border border-slate-200 rounded-lg text-center">
+        <p className="text-slate-600">PDF document not available</p>
       </div>
     )
   }
 
   return (
-    <div className="my-8 border border-gray-300 rounded-lg overflow-hidden">
+    <div className="my-8 border border-slate-200 rounded-lg overflow-hidden shadow-md">
       {/* Header */}
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <FileText className="h-5 w-5 text-red-600 mr-2" />
             <div>
-              <h3 className="font-medium text-gray-900">{fileName}</h3>
-              {caption && <p className="text-sm text-gray-600 mt-1">{caption}</p>}
+              <h3 className="font-medium text-slate-900">{fileName}</h3>
+              {caption && <p className="text-sm text-slate-600 mt-1">{caption}</p>}
+              {fileSize && <p className="text-xs text-slate-500 mt-0.5">{fileSize}</p>}
             </div>
           </div>
-          {showDownloadButton && (
+
+          <div className="flex gap-2">
+            {/* View button - always available */}
             <a
               href={pdfUrl}
-              download
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Download
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View
             </a>
-          )}
+
+            {/* Download button - only if explicitly allowed */}
+            {showDownloadButton && (
+              <a
+                href={pdfUrl}
+                download
+                className="inline-flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
       {/* PDF Preview */}
       {showPreview && (
         <div className="bg-white">
-          <iframe
-            src={`${pdfUrl}#toolbar=1`}
-            width="100%"
-            height={previewHeight}
-            className="border-0"
-            title={fileName}
-          >
-            <p>
-              Your browser does not support PDFs.
-              <a href={pdfUrl} className="text-blue-600 hover:text-blue-800">
-                Download the PDF
-              </a>
-            </p>
-          </iframe>
+          {isMobile ? (
+            // Mobile-friendly PDF viewer
+            <div className="p-8 text-center bg-slate-50">
+              <div className="max-w-sm mx-auto">
+                <div className="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
+                  <FileText className="h-10 w-10 text-red-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-slate-900 mb-2">PDF Document</h4>
+                <p className="text-sm text-slate-600 mb-6">
+                  PDF previews aren&apos;t supported on mobile devices.
+                  {fileSize && ` (File size: ${fileSize})`}
+                </p>
+
+                {/* Only show buttons if download is allowed */}
+                {showDownloadButton && (
+                  <div className="space-y-3">
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full px-4 py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                    >
+                      <ExternalLink className="h-4 w-4 inline mr-2" />
+                      Open in Browser
+                    </a>
+                    <a
+                      href={pdfUrl}
+                      download
+                      className="block w-full px-4 py-3 bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-700 transition-colors shadow-sm"
+                    >
+                      <Download className="h-4 w-4 inline mr-2" />
+                      Download PDF
+                    </a>
+                  </div>
+                )}
+
+                {showDownloadButton && (
+                  <p className="text-xs text-slate-500 mt-4">
+                    Tip: Use &ldquo;Open in Browser&rdquo; to view in your device&apos;s PDF viewer
+                  </p>
+                )}
+
+                {/* If download not allowed, show message */}
+                {!showDownloadButton && (
+                  <p className="text-sm text-slate-500 italic">This document is for viewing only</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Desktop iframe preview
+            <iframe
+              src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+              width="100%"
+              height={previewHeight}
+              className="border-0"
+              title={fileName}
+              loading="lazy"
+            >
+              <div className="p-8 text-center">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-600 mb-4">Your browser does not support PDF previews.</p>
+
+                {/* Only show fallback buttons if download is allowed */}
+                {showDownloadButton && (
+                  <div className="space-y-2">
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800 mr-2 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open PDF
+                    </a>
+                    <a
+                      href={pdfUrl}
+                      download
+                      className="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 transition-colors"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </a>
+                  </div>
+                )}
+              </div>
+            </iframe>
+          )}
         </div>
       )}
     </div>
