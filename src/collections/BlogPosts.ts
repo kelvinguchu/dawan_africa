@@ -3,6 +3,8 @@ import type { CollectionAfterChangeHook, Access, User } from 'payload'
 import { RichText } from '../blocks/richText/schema.ts'
 import { Cover } from '../blocks/cover/schema.ts'
 import { Image } from '../blocks/image/schema.ts'
+import { Video } from '../blocks/video/schema.ts'
+import { PDF } from '../blocks/pdf/schema.ts'
 import slugify from 'slugify'
 import { ObjectId } from 'mongodb'
 import { generateAudioAfterChange, deleteAudioBeforeDelete } from '../components/audio/audioHooks'
@@ -286,7 +288,7 @@ export const BlogPost: CollectionConfig = {
       name: 'layout',
       type: 'blocks',
       label: 'Layout',
-      blocks: [RichText, Cover, Image],
+      blocks: [RichText, Cover, Image, Video, PDF],
     },
     {
       name: 'categories',

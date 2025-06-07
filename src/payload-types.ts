@@ -175,7 +175,14 @@ export interface User {
  */
 export interface Media {
   id: string;
+  /**
+   * Alternative text for images (important for accessibility)
+   */
   alt?: string | null;
+  /**
+   * Optional caption for the media file
+   */
+  caption?: string | null;
   _key?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -188,6 +195,35 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      _key?: string | null;
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      _key?: string | null;
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    tablet?: {
+      _key?: string | null;
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * Manage blog posts and content.
@@ -259,6 +295,52 @@ export interface BlogPost {
             id?: string | null;
             blockName?: string | null;
             blockType: 'image';
+          }
+        | {
+            /**
+             * Upload a video file (MP4, WebM, etc.)
+             */
+            video: string | Media;
+            /**
+             * Whether the video should start playing automatically (note: most browsers require videos to be muted for autoplay)
+             */
+            autoplay?: boolean | null;
+            /**
+             * Whether the video should be muted by default
+             */
+            muted?: boolean | null;
+            /**
+             * Whether to show video player controls (play, pause, volume, etc.)
+             */
+            controls?: boolean | null;
+            /**
+             * Whether the video should loop continuously
+             */
+            loop?: boolean | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'video';
+          }
+        | {
+            /**
+             * Upload a PDF document
+             */
+            pdf: string | Media;
+            /**
+             * Whether to display a download button for the PDF
+             */
+            showDownloadButton?: boolean | null;
+            /**
+             * Whether to show an embedded preview of the PDF (may not work on all devices)
+             */
+            showPreview?: boolean | null;
+            /**
+             * Height of the PDF preview in pixels
+             */
+            previewHeight?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'pdf';
           }
       )[]
     | null;
@@ -503,6 +585,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  caption?: T;
   _key?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -515,6 +598,43 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              _key?: T;
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              _key?: T;
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        tablet?:
+          | T
+          | {
+              _key?: T;
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -548,6 +668,27 @@ export interface BlogPostsSelect<T extends boolean = true> {
           | T
           | {
               image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        video?:
+          | T
+          | {
+              video?: T;
+              autoplay?: T;
+              muted?: T;
+              controls?: T;
+              loop?: T;
+              id?: T;
+              blockName?: T;
+            };
+        pdf?:
+          | T
+          | {
+              pdf?: T;
+              showDownloadButton?: T;
+              showPreview?: T;
+              previewHeight?: T;
               id?: T;
               blockName?: T;
             };

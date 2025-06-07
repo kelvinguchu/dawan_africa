@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { Media } from '@/payload-types'
-import { ExternalLink, FileText, Quote } from 'lucide-react'
+import { ExternalLink, FileText, Quote, Download } from 'lucide-react'
 import { CopyButton } from './CopyButton'
 
 interface BlockRendererProps {
@@ -203,6 +203,103 @@ const RichTextBlock: React.FC<{ content: any }> = ({ content }) => {
                 )
               }
               return null
+            case 'upload':
+              // Handle upload nodes from Lexical editor
+              if (node.value && typeof node.value === 'object') {
+                const uploadData = node.value
+                const isVideo = uploadData.mimeType?.startsWith('video/')
+                const isPDF = uploadData.mimeType === 'application/pdf'
+                const isImage = uploadData.mimeType?.startsWith('image/')
+
+                if (isVideo) {
+                  return (
+                    <figure key={index} className="my-8">
+                      <div className="rounded-lg overflow-hidden shadow-lg bg-black">
+                        <video
+                          src={uploadData.url}
+                          controls
+                          className="w-full h-auto"
+                          preload="metadata"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                      {uploadData.caption && (
+                        <figcaption className="text-center text-gray-600 mt-3 text-sm">
+                          {uploadData.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  )
+                } else if (isPDF) {
+                  return (
+                    <div
+                      key={index}
+                      className="my-8 border border-gray-300 rounded-lg overflow-hidden"
+                    >
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="h-5 w-5 text-red-600 mr-2" />
+                            <div>
+                              <h3 className="font-medium text-gray-900">
+                                {uploadData.filename || 'Document'}
+                              </h3>
+                              {uploadData.caption && (
+                                <p className="text-sm text-gray-600 mt-1">{uploadData.caption}</p>
+                              )}
+                            </div>
+                          </div>
+                          <a
+                            href={uploadData.url}
+                            download
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                      <div className="bg-white">
+                        <iframe
+                          src={`${uploadData.url}#toolbar=1`}
+                          width="100%"
+                          height={600}
+                          className="border-0"
+                          title={uploadData.filename || 'Document'}
+                        >
+                          <p>
+                            Your browser does not support PDFs.
+                            <a href={uploadData.url} className="text-blue-600 hover:text-blue-800">
+                              Download the PDF
+                            </a>
+                          </p>
+                        </iframe>
+                      </div>
+                    </div>
+                  )
+                } else if (isImage) {
+                  return (
+                    <figure key={index} className="my-8">
+                      <div className="rounded-lg overflow-hidden shadow-lg">
+                        <Image
+                          src={uploadData.url}
+                          alt={uploadData.alt || ''}
+                          width={uploadData.width || 800}
+                          height={uploadData.height || 600}
+                          className="w-full h-auto"
+                        />
+                      </div>
+                      {uploadData.caption && (
+                        <figcaption className="text-center text-gray-600 mt-3 text-sm">
+                          {uploadData.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  )
+                }
+              }
+              return null
             case 'link':
               const url = node.url || ''
               const isExternal = url.startsWith('http')
@@ -328,6 +425,116 @@ const CoverBlock: React.FC<{
   )
 }
 
+// Video Block Component
+const VideoBlock: React.FC<{
+  video?: Media | string | null
+  autoplay?: boolean
+  muted?: boolean
+  controls?: boolean
+  loop?: boolean
+}> = ({ video, autoplay = false, muted = false, controls = true, loop = false }) => {
+  const videoUrl = typeof video === 'string' ? null : video?.url
+  const videoObj = typeof video === 'string' ? null : video
+  const caption = videoObj?.caption // Get caption from media object
+
+  if (!videoUrl) {
+    return (
+      <div className="my-8 p-6 bg-gray-50 border border-gray-300 rounded-lg text-center">
+        <p className="text-gray-600">Video not available</p>
+      </div>
+    )
+  }
+
+  return (
+    <figure className="my-8">
+      <div className="rounded-lg overflow-hidden shadow-lg bg-black">
+        <video
+          src={videoUrl}
+          autoPlay={autoplay}
+          muted={muted}
+          controls={controls}
+          loop={loop}
+          className="w-full h-auto"
+          preload="metadata"
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      {caption && (
+        <figcaption className="text-center text-gray-600 mt-3 text-sm">{caption}</figcaption>
+      )}
+    </figure>
+  )
+}
+
+// PDF Block Component
+const PDFBlock: React.FC<{
+  pdf?: Media | string | null
+  showDownloadButton?: boolean
+  showPreview?: boolean
+  previewHeight?: number
+}> = ({ pdf, showDownloadButton = true, showPreview = true, previewHeight = 600 }) => {
+  const pdfUrl = typeof pdf === 'string' ? null : pdf?.url
+  const pdfObj = typeof pdf === 'string' ? null : pdf
+  const fileName = pdfObj?.filename || 'Document'
+  const caption = pdfObj?.caption // Get caption from media object
+
+  if (!pdfUrl) {
+    return (
+      <div className="my-8 p-6 bg-gray-50 border border-gray-300 rounded-lg text-center">
+        <p className="text-gray-600">PDF document not available</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="my-8 border border-gray-300 rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <FileText className="h-5 w-5 text-red-600 mr-2" />
+            <div>
+              <h3 className="font-medium text-gray-900">{fileName}</h3>
+              {caption && <p className="text-sm text-gray-600 mt-1">{caption}</p>}
+            </div>
+          </div>
+          {showDownloadButton && (
+            <a
+              href={pdfUrl}
+              download
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* PDF Preview */}
+      {showPreview && (
+        <div className="bg-white">
+          <iframe
+            src={`${pdfUrl}#toolbar=1`}
+            width="100%"
+            height={previewHeight}
+            className="border-0"
+            title={fileName}
+          >
+            <p>
+              Your browser does not support PDFs.
+              <a href={pdfUrl} className="text-blue-600 hover:text-blue-800">
+                Download the PDF
+              </a>
+            </p>
+          </iframe>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // This component will map blockType to the actual rendering component
 export const BlockRenderer: React.FC<BlockRendererProps> = ({ block, hideTextOverlay }) => {
   switch (block.blockType?.toLowerCase()) {
@@ -338,6 +545,25 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ block, hideTextOve
       return <RichTextBlock content={richtextContent} />
     case 'image':
       return <ImageBlock image={block.image} altText={block.alt} />
+    case 'video':
+      return (
+        <VideoBlock
+          video={block.video}
+          autoplay={block.autoplay}
+          muted={block.muted}
+          controls={block.controls}
+          loop={block.loop}
+        />
+      )
+    case 'pdf':
+      return (
+        <PDFBlock
+          pdf={block.pdf}
+          showDownloadButton={block.showDownloadButton}
+          showPreview={block.showPreview}
+          previewHeight={block.previewHeight}
+        />
+      )
     case 'cover':
       return (
         <CoverBlock
